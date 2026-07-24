@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Daily Dashboard">
+<meta name="theme-color" content="#1A2035">
+<title>Mark's Daily Dashboard</title>
+<link rel="manifest" href="manifest.json">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --navy: #1A2035; --navy2: #232B42; --gold: #C9A84C; --gold2: #E8C96A;
+  --slate: #3A4560; --card: #FFFFFF; --bg: #F0F2F7; --text: #1A2035;
+  --muted: #6B7280; --border: #E2E6EF; --green: #2E7D52; --red: #C0392B;
+  --rule: 4px solid var(--gold);
+}
+body { font-family: -apple-system,'SF Pro Display','Segoe UI',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding-bottom:60px; }
+
+/* HEADER */
+.header { background:linear-gradient(160deg,#1A2035 0%,#2C3A5C 100%); padding:48px 20px 16px; position:sticky; top:0; z-index:100; }
+.header-top { display:flex; justify-content:space-between; align-items:flex-start; }
+.header-date { font-size:11px; letter-spacing:2px; color:var(--gold); text-transform:uppercase; margin-bottom:2px; }
+.header-greeting { font-size:20px; font-weight:700; color:#fff; }
+.header-time { font-size:32px; font-weight:300; color:#fff; letter-spacing:-1px; font-variant-numeric:tabular-nums; }
+.header-time sup { font-size:13px; color:var(--gold); font-weight:600; vertical-align:super; margin-left:2px; }
+
+/* CARDS */
+.page { padding:14px 16px 0; }
+.card { background:var(--card); border-radius:14px; border-left:var(--rule); margin-bottom:12px; overflow:hidden; box-shadow:0 2px 8px #1A203512; }
+.card-header { display:flex; align-items:center; justify-content:space-between; padding:13px 16px 10px; border-bottom:1px solid var(--border); }
+.card-title { font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--slate); }
+.card-action { font-size:20px; color:var(--gold); cursor:pointer; line-height:1; padding:4px 6px; border:none; background:none; }
+.card-body { padding:12px 16px 14px; }
+
+/* WEATHER */
+.weather-main { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.weather-temp { font-size:52px; font-weight:200; color:var(--navy); letter-spacing:-2px; line-height:1; }
+.weather-temp sup { font-size:22px; font-weight:400; vertical-align:super; color:var(--muted); }
+.weather-icon { font-size:48px; line-height:1; }
+.weather-desc { font-size:14px; color:var(--muted); margin-bottom:8px; }
+.weather-pills { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+.pill { background:var(--bg); border-radius:20px; padding:4px 10px; font-size:12px; color:var(--slate); font-weight:500; }
+.pill strong { color:var(--navy); }
+.moon-pill { display:inline-flex; align-items:center; gap:5px; background:var(--navy); color:var(--gold); border-radius:20px; padding:4px 10px; font-size:12px; font-weight:600; }
+.weather-sun { display:flex; flex-wrap:wrap; gap:12px; font-size:12px; color:var(--muted); padding-top:8px; border-top:1px solid var(--border); }
+.weather-sun span { display:flex; align-items:center; gap:4px; }
+.weather-loading { color:var(--muted); font-size:14px; padding:16px 0; text-align:center; }
+
+/* DATES */
+.date-item { display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--border); }
+.date-item:last-child { border-bottom:none; padding-bottom:0; }
+.date-badge { min-width:48px; height:48px; border-radius:10px; background:var(--navy); color:var(--gold); display:flex; flex-direction:column; align-items:center; justify-content:center; font-weight:700; flex-shrink:0; }
+.date-badge .days { font-size:17px; line-height:1; }
+.date-badge .dlabel { font-size:8px; letter-spacing:1px; text-transform:uppercase; opacity:0.8; }
+.date-info { flex:1; }
+.date-name { font-size:14px; font-weight:600; color:var(--navy); }
+.date-when { font-size:12px; color:var(--muted); margin-top:1px; }
+.add-date-btn { display:flex; align-items:center; gap:6px; background:none; border:1.5px dashed var(--gold); color:var(--gold); border-radius:8px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer; margin-top:10px; width:100%; justify-content:center; }
+
+/* MODAL */
+.modal-overlay { position:fixed; inset:0; background:#0008; z-index:200; display:flex; align-items:center; justify-content:center; padding:20px; }
+.modal { background:#fff; border-radius:16px; padding:24px; width:100%; max-width:420px; }
+.modal h3 { font-size:16px; font-weight:700; color:var(--navy); margin-bottom:16px; }
+.modal input, .modal select { width:100%; padding:10px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:15px; margin-bottom:12px; color:var(--navy); background:#fff; }
+.modal-btns { display:flex; gap:8px; margin-top:4px; }
+.btn-primary { flex:1; padding:11px; background:var(--navy); color:var(--gold); border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; }
+.btn-secondary { flex:1; padding:11px; background:var(--bg); color:var(--slate); border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; }
+
+/* ROUTINE */
+.routine-tabs { display:flex; gap:0; margin-bottom:12px; background:var(--bg); border-radius:8px; padding:3px; }
+.routine-tab { flex:1; text-align:center; padding:7px; border-radius:6px; font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; border:none; background:none; transition:all 0.15s; }
+.routine-tab.active { background:var(--navy); color:var(--gold); }
+.habit-row { display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); }
+.habit-row:last-child { border-bottom:none; padding-bottom:0; }
+.habit-check { width:26px; height:26px; border-radius:50%; border:2px solid var(--gold); background:transparent; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff; cursor:pointer; transition:all 0.15s; }
+.habit-check.done { background:var(--green); border-color:var(--green); }
+.habit-info { flex:1; }
+.habit-name { font-size:14px; font-weight:500; color:var(--navy); }
+.habit-name.done { text-decoration:line-through; color:var(--muted); }
+.habit-meta { font-size:11px; color:var(--muted); margin-top:2px; }
+.streak-badge { font-size:11px; font-weight:700; color:var(--gold); background:var(--navy); border-radius:10px; padding:3px 8px; white-space:nowrap; flex-shrink:0; margin-top:2px; }
+.weekly-bar { display:flex; align-items:center; gap:6px; margin-top:4px; }
+.weekly-dots { display:flex; gap:3px; }
+.dot { width:9px; height:9px; border-radius:50%; background:var(--border); }
+.dot.filled { background:var(--green); }
+.dot.open { background:var(--border); }
+.weekly-label { font-size:11px; color:var(--muted); }
+.add-habit-btn { display:flex; align-items:center; gap:6px; background:none; border:1.5px dashed var(--gold); color:var(--gold); border-radius:8px; padding:7px 14px; font-size:13px; font-weight:600; cursor:pointer; margin-top:10px; width:100%; justify-content:center; }
+
+/* CATHOLIC */
+.catholic-season { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.season-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+.season-text { font-size:13px; color:var(--slate); font-weight:500; }
+.catholic-feast { font-size:15px; font-weight:700; color:var(--navy); margin-bottom:3px; }
+.catholic-countdown { font-size:12px; color:var(--muted); margin-bottom:12px; }
+.readings-btn { display:inline-flex; align-items:center; gap:6px; background:var(--navy); color:var(--gold); border-radius:8px; padding:10px 16px; font-size:13px; font-weight:600; text-decoration:none; cursor:pointer; border:none; }
+
+/* CALENDAR */
+.cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.cal-nav-btn { width:34px; height:34px; border-radius:8px; background:var(--bg); border:none; cursor:pointer; font-size:18px; color:var(--slate); display:flex; align-items:center; justify-content:center; }
+.cal-nav-date { font-size:14px; font-weight:700; color:var(--navy); }
+.cal-event { display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); }
+.cal-event:last-child { border-bottom:none; padding-bottom:0; }
+.cal-time { font-size:11px; font-weight:700; color:var(--gold); min-width:46px; padding-top:2px; font-variant-numeric:tabular-nums; }
+.cal-dot { width:8px; height:8px; border-radius:50%; margin-top:5px; flex-shrink:0; }
+.cal-title { font-size:14px; font-weight:500; color:var(--navy); }
+.cal-sub { font-size:12px; color:var(--muted); margin-top:1px; }
+.cal-empty { color:var(--muted); font-size:14px; text-align:center; padding:16px 0; }
+.cal-connect-btn { display:flex; align-items:center; justify-content:center; gap:8px; background:var(--navy); color:var(--gold); border:none; border-radius:8px; padding:10px 16px; font-size:13px; font-weight:600; cursor:pointer; width:100%; margin-top:8px; }
+
+/* TASKS */
+.task-section-label { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); margin:10px 0 6px; }
+.task-section-label:first-child { margin-top:0; }
+.task-row { display:flex; align-items:flex-start; gap:10px; padding:7px 0; border-bottom:1px solid var(--border); }
+.task-row:last-child { border-bottom:none; }
+.task-check { width:22px; height:22px; border-radius:50%; border:2px solid var(--gold); background:transparent; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:12px; color:#fff; cursor:pointer; margin-top:1px; }
+.task-check.done { background:var(--green); border-color:var(--green); }
+.task-text { font-size:14px; color:var(--navy); flex:1; line-height:1.3; }
+.task-text.done { text-decoration:line-through; color:var(--muted); }
+.task-flag { font-size:13px; flex-shrink:0; margin-top:2px; }
+.task-tag { font-size:10px; font-weight:700; border-radius:6px; padding:2px 6px; flex-shrink:0; margin-top:3px; }
+.tag-job { background:#EBF5EC; color:#2E7D52; }
+.tag-biz { background:#EEF0FB; color:#3949AB; }
+.tag-home { background:#FBF6EC; color:#8B6914; }
+.tag-camp { background:#EDF5ED; color:#4E8B4E; }
+.task-empty { color:var(--muted); font-size:14px; text-align:center; padding:12px 0; }
+.add-task-row { display:flex; gap:8px; margin-top:10px; }
+.add-task-input { flex:1; padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:14px; color:var(--navy); background:#fafafa; }
+.add-task-select { padding:9px 8px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; color:var(--navy); background:#fafafa; }
+.add-task-btn { padding:9px 14px; background:var(--navy); color:var(--gold); border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; }
+
+/* MARKETS */
+.market-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:12px; }
+.market-tile { background:var(--bg); border-radius:10px; padding:10px; }
+.market-name { font-size:10px; font-weight:700; color:var(--muted); letter-spacing:0.5px; margin-bottom:4px; }
+.market-val { font-size:15px; font-weight:700; color:var(--navy); letter-spacing:-0.5px; }
+.market-chg { font-size:11px; font-weight:600; margin-top:2px; }
+.up { color:var(--green); } .dn { color:var(--red); }
+.market-divider { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+.stock-row { display:flex; align-items:center; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.stock-row:last-child { border-bottom:none; }
+.stock-ticker { font-weight:700; color:var(--navy); }
+.stock-name { color:var(--muted); font-size:11px; }
+.stock-right { text-align:right; }
+.stock-price { font-weight:600; color:var(--navy); }
+.market-loading { color:var(--muted); font-size:14px; text-align:center; padding:12px 0; }
+.market-updated { font-size:10px; color:var(--muted); text-align:right; margin-top:6px; }
+
+/* HUNTING BUTTON */
+.hunting-btn { display:flex; align-items:center; gap:12px; background:linear-gradient(135deg,#1A2E1A,#2D4A2D); border-radius:14px; padding:18px 20px; margin:4px 16px 16px; cursor:pointer; border-left:var(--rule); box-shadow:0 2px 8px #1A2E1A22; border-top:none; border-right:none; border-bottom:none; width:calc(100% - 32px); }
+.hunting-icon { font-size:28px; }
+.hunting-text { color:#fff; text-align:left; }
+.hunting-title { font-size:16px; font-weight:700; }
+.hunting-sub { font-size:12px; color:#82C882; margin-top:2px; }
+.hunting-arrow { color:var(--gold); font-size:22px; margin-left:auto; }
+
+/* SCRIPTURE */
+.scripture { text-align:center; padding:8px 20px 0; font-size:12px; color:var(--muted); font-style:italic; }
+
+/* TOAST */
+.toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--navy); color:var(--gold); padding:10px 20px; border-radius:20px; font-size:13px; font-weight:600; z-index:300; opacity:0; transition:opacity 0.3s; pointer-events:none; }
+.toast.show { opacity:1; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="header-date" id="headerDate">Loading...</div>
+      <div class="header-greeting">Good morning, Mark</div>
+    </div>
+    <div class="header-time" id="headerTime">--:--<sup>--</sup></div>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- 1. WEATHER -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title" id="weatherLocation">Weather · Detecting location...</span>
+      <button class="card-action" onclick="refreshWeather()">›</button>
+    </div>
+    <div class="card-body" id="weatherBody">
+      <div class="weather-loading">📡 Fetching weather...</div>
+    </div>
+  </div>
+
+  <!-- 2. UPCOMING DATES -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Upcoming</span>
+      <button class="card-action" onclick="openDateModal()">+</button>
+    </div>
+    <div class="card-body" id="datesBody">
+      <div class="weather-loading">Loading dates...</div>
+    </div>
+  </div>
+
+  <!-- 3. ROUTINE -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Routine</span>
+      <button class="card-action" onclick="openHabitModal()">✎</button>
+    </div>
+    <div class="card-body">
+      <div class="routine-tabs">
+        <button class="routine-tab active" onclick="switchRoutine('morning',this)">Morning</button>
+        <button class="routine-tab" onclick="switchRoutine('evening',this)">Evening</button>
+      </div>
+      <div id="routineBody">Loading...</div>
+      <button class="add-habit-btn" onclick="openHabitModal()">+ Add habit</button>
+    </div>
+  </div>
+
+  <!-- 4. CATHOLIC DAILY -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Catholic Daily</span>
+      <button class="card-action" onclick="window.open('https://www.usccb.org/readings','_blank')">›</button>
+    </div>
+    <div class="card-body" id="catholicBody">
+      <div class="weather-loading">Loading liturgical info...</div>
+    </div>
+  </div>
+
+  <!-- 5. CALENDAR -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Calendar</span>
+      <button class="card-action" onclick="showToast('Full calendar coming soon')">›</button>
+    </div>
+    <div class="card-body">
+      <div class="cal-nav">
+        <button class="cal-nav-btn" onclick="changeCalDay(-1)">‹</button>
+        <div class="cal-nav-date" id="calNavDate">Today</div>
+        <button class="cal-nav-btn" onclick="changeCalDay(1)">›</button>
+      </div>
+      <div id="calBody">
+        <div class="cal-empty">Connect Google Calendar to see your events.</div>
+        <button class="cal-connect-btn" onclick="showToast('Google Calendar setup coming in next update')">
+          📅 Connect Google Calendar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. TASKS -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Urgent &amp; Priority Tasks</span>
+      <button class="card-action" onclick="showToast('Full task manager coming soon')">›</button>
+    </div>
+    <div class="card-body" id="tasksBody">
+      <div class="weather-loading">Loading tasks...</div>
+    </div>
+  </div>
+
+  <!-- 7. MARKETS -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Markets</span>
+      <button class="card-action" onclick="refreshMarkets()">↻</button>
+    </div>
+    <div class="card-body" id="marketsBody">
+      <div class="market-loading">📈 Fetching market data...</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- HUNTING BUTTON -->
+<button class="hunting-btn" onclick="showToast('Hunting & Fishing Forecast coming soon')">
+  <div class="hunting-icon">🦌🎣</div>
+  <div class="hunting-text">
+    <div class="hunting-title">Hunting &amp; Fishing Forecast</div>
+    <div class="hunting-sub">Tap to view today's forecast</div>
+  </div>
+  <div class="hunting-arrow">›</div>
+</button>
+
+<div class="scripture">"Whatever you do, work at it with all your heart." — Col 3:23</div>
+
+<!-- ADD DATE MODAL -->
+<div class="modal-overlay" id="dateModal" style="display:none">
+  <div class="modal">
+    <h3>Add Important Date</h3>
+    <input type="text" id="dateLabel" placeholder="e.g. Wedding Anniversary 💍">
+    <input type="date" id="dateValue">
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeDateModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveDate()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD HABIT MODAL -->
+<div class="modal-overlay" id="habitModal" style="display:none">
+  <div class="modal">
+    <h3>Add Habit</h3>
+    <input type="text" id="habitName" placeholder="e.g. Prayer & Bible">
+    <select id="habitSession">
+      <option value="morning">Morning</option>
+      <option value="evening">Evening</option>
+    </select>
+    <select id="habitType">
+      <option value="daily">Daily (streak)</option>
+      <option value="weekly">Weekly goal</option>
+    </select>
+    <input type="number" id="habitGoal" placeholder="Weekly goal (e.g. 4)" style="display:none">
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeHabitModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveHabit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- FIREBASE -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, getDoc, setDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCS9kGc8RllKG-qpcMGfBLWxle_FmUJb1k",
+  authDomain: "daily-dashboard-58434.firebaseapp.com",
+  projectId: "daily-dashboard-58434",
+  storageBucket: "daily-dashboard-58434.firebasestorage.app",
+  messagingSenderId: "487255954196",
+  appId: "1:487255954196:web:d6e1a08c75b9e96b68a801"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const USER = 'mark';
+
+// ── State ──────────────────────────────────────────────────────────────────
+let state = {
+  dates: [],
+  habits: [
+    { id:'h1', name:'Prayer & Bible (5:05 AM)', session:'morning', type:'daily', streak:0, bestStreak:0, lastDone:'' },
+    { id:'h2', name:'16 oz Water on Wake', session:'morning', type:'daily', streak:0, bestStreak:0, lastDone:'' },
+    { id:'h3', name:'Workout (5:55 AM)', session:'morning', type:'weekly', weeklyGoal:4, weeklyDone:[], weekStreak:0 },
+    { id:'h4', name:'Keto Meal (under 30g carbs)', session:'morning', type:'daily', streak:0, bestStreak:0, lastDone:'' },
+    { id:'h5', name:'Phone down at 9:00 PM', session:'evening', type:'daily', streak:0, bestStreak:0, lastDone:'' },
+    { id:'h6', name:'Time with wife (9:15 PM)', session:'evening', type:'daily', streak:0, bestStreak:0, lastDone:'' },
+    { id:'h7', name:'Lights out by 9:30 PM', session:'evening', type:'daily', streak:0, bestStreak:0, lastDone:'' },
+  ],
+  tasks: {
+    job: [], biz: [], home: [], camp: []
+  },
+  routineSession: new Date().getHours() < 17 ? 'morning' : 'evening',
+  calOffset: 0
+};
+
+const todayStr = () => new Date().toISOString().slice(0,10);
+const weekStr = () => { const d=new Date(); const jan=new Date(d.getFullYear(),0,1); return d.getFullYear()+'-W'+Math.ceil(((d-jan)/86400000+jan.getDay()+1)/7); };
+
+// ── Firebase Load/Save ────────────────────────────────────────────────────
+async function loadFromFirebase() {
+  try {
+    const snap = await getDoc(doc(db,'users',USER));
+    if (snap.exists()) {
+      const data = snap.data();
+      if (data.dates) state.dates = data.dates;
+      if (data.habits) state.habits = data.habits;
+      if (data.tasks) state.tasks = data.tasks;
+    }
+  } catch(e) { console.log('Firebase load error:',e); }
+}
+
+async function saveToFirebase() {
+  try {
+    await setDoc(doc(db,'users',USER), {
+      dates: state.dates,
+      habits: state.habits,
+      tasks: state.tasks,
+      updatedAt: new Date().toISOString()
+    });
+  } catch(e) { console.log('Firebase save error:',e); }
+}
+
+// ── Clock ─────────────────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('headerDate').textContent = `${days[now.getDay()]} · ${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+  let h = now.getHours(), m = now.getMinutes(), ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  document.getElementById('headerTime').innerHTML = `${h}:${String(m).padStart(2,'0')}<sup>${ampm}</sup>`;
+  // Update greeting
+  const hour = now.getHours();
+  const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  document.querySelector('.header-greeting').textContent = `${greet}, Mark`;
+}
+
+// ── Weather ───────────────────────────────────────────────────────────────
+const WMO = {0:'Clear sky ☀️',1:'Mainly clear 🌤',2:'Partly cloudy ⛅',3:'Overcast ☁️',45:'Foggy 🌫',48:'Icy fog 🌫',51:'Light drizzle 🌦',53:'Drizzle 🌦',55:'Heavy drizzle 🌧',61:'Light rain 🌧',63:'Rain 🌧',65:'Heavy rain 🌧',71:'Light snow 🌨',73:'Snow 🌨',75:'Heavy snow ❄️',77:'Snow grains ❄️',80:'Rain showers 🌦',81:'Rain showers 🌧',82:'Heavy showers ⛈',85:'Snow showers 🌨',86:'Heavy snow showers ❄️',95:'Thunderstorm ⛈',96:'Thunderstorm ⛈',99:'Thunderstorm ⛈'};
+const WIND_DIR = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+function windDir(deg) { return WIND_DIR[Math.round(deg/22.5)%16]; }
+function moonPhase() {
+  const phases=['🌑 New Moon','🌒 Waxing Crescent','🌓 First Quarter','🌔 Waxing Gibbous','🌕 Full Moon','🌖 Waning Gibbous','🌗 Last Quarter','🌘 Waning Crescent'];
+  const known = new Date('2000-01-06'); const now = new Date();
+  const diff = (now - known) / (1000*60*60*24);
+  const cycle = diff % 29.53;
+  return phases[Math.floor(cycle/29.53*8)];
+}
+
+window.refreshWeather = async function() {
+  document.getElementById('weatherBody').innerHTML = '<div class="weather-loading">📡 Fetching weather...</div>';
+  try {
+    let lat = 37.7789, lon = -97.5311, locName = 'Colwich, KS';
+    try {
+      const pos = await new Promise((res,rej) => navigator.geolocation.getCurrentPosition(res,rej,{timeout:5000}));
+      lat = pos.coords.latitude; lon = pos.coords.longitude;
+      // Reverse geocode with Open-Meteo geocoding
+      const geo = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+      const gd = await geo.json();
+      locName = gd.address?.city || gd.address?.town || gd.address?.village || locName;
+    } catch(e) {}
+    document.getElementById('weatherLocation').textContent = `Weather · ${locName}`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation_probability,weather_code,wind_speed_10m,wind_direction_10m&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=auto&forecast_days=1`;
+    const r = await fetch(url);
+    const d = await r.json();
+    const c = d.current; const day = d.daily;
+    const desc = WMO[c.weather_code] || 'Unknown';
+    const icon = desc.split(' ').pop();
+    const sunriseTime = new Date(day.sunrise[0]).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+    const sunsetTime = new Date(day.sunset[0]).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+    const sunrise = new Date(day.sunrise[0]), sunset = new Date(day.sunset[0]);
+    const daylight = Math.round((sunset-sunrise)/3600000);
+    const dlMin = Math.round(((sunset-sunrise)/3600000 - daylight)*60);
+    document.getElementById('weatherBody').innerHTML = `
+      <div class="weather-main">
+        <div>
+          <div class="weather-temp">${Math.round(c.temperature_2m)}<sup>°</sup></div>
+          <div class="weather-desc">${desc.replace(icon,'').trim()} · Feels like ${Math.round(c.apparent_temperature)}°</div>
+        </div>
+        <div class="weather-icon">${icon}</div>
+      </div>
+      <div class="weather-pills">
+        <div class="pill"><strong>High</strong> ${Math.round(day.temperature_2m_max[0])}°</div>
+        <div class="pill"><strong>Low</strong> ${Math.round(day.temperature_2m_min[0])}°</div>
+        <div class="pill"><strong>Wind</strong> ${windDir(c.wind_direction_10m)} ${Math.round(c.wind_speed_10m)} mph</div>
+        <div class="pill"><strong>Humidity</strong> ${c.relative_humidity_2m}%</div>
+        <div class="pill"><strong>Precip</strong> ${c.precipitation_probability}%</div>
+        <div class="moon-pill">${moonPhase()}</div>
+      </div>
+      <div class="weather-sun">
+        <span>🌅 <strong>${sunriseTime}</strong> Sunrise</span>
+        <span>🌇 <strong>${sunsetTime}</strong> Sunset</span>
+        <span>☀️ <strong>${daylight}h ${dlMin}m</strong> daylight</span>
+      </div>`;
+  } catch(e) {
+    document.getElementById('weatherBody').innerHTML = '<div class="weather-loading">⚠️ Could not load weather. Check connection.</div>';
+  }
+}
+
+// ── Dates ─────────────────────────────────────────────────────────────────
+function renderDates() {
+  const now = new Date(); now.setHours(0,0,0,0);
+  const sorted = state.dates
+    .map(d => { const dt = new Date(d.date+'T00:00:00'); const diff = Math.ceil((dt-now)/86400000); return {...d,diff}; })
+    .filter(d => d.diff >= 0)
+    .sort((a,b) => a.diff-b.diff)
+    .slice(0,5);
+  if (!sorted.length) {
+    document.getElementById('datesBody').innerHTML = `<div class="weather-loading">No upcoming dates. Tap + to add one.</div><button class="add-date-btn" onclick="openDateModal()">+ Add important date</button>`;
+    return;
+  }
+  let html = sorted.map(d => `
+    <div class="date-item">
+      <div class="date-badge"><div class="days">${d.diff}</div><div class="dlabel">${d.diff===1?'day':'days'}</div></div>
+      <div class="date-info"><div class="date-name">${d.label}</div><div class="date-when">${new Date(d.date+'T00:00:00').toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'})}</div></div>
+    </div>`).join('');
+  html += `<button class="add-date-btn" onclick="openDateModal()">+ Add date</button>`;
+  document.getElementById('datesBody').innerHTML = html;
+}
+
+window.openDateModal = function() { document.getElementById('dateModal').style.display='flex'; }
+window.closeDateModal = function() { document.getElementById('dateModal').style.display='none'; document.getElementById('dateLabel').value=''; document.getElementById('dateValue').value=''; }
+window.saveDate = async function() {
+  const label = document.getElementById('dateLabel').value.trim();
+  const date = document.getElementById('dateValue').value;
+  if (!label || !date) { showToast('Please fill in both fields'); return; }
+  state.dates.push({ id: Date.now().toString(), label, date });
+  state.dates.sort((a,b) => a.date.localeCompare(b.date));
+  closeDateModal(); renderDates(); await saveToFirebase(); showToast('Date saved ✓');
+}
+
+// ── Routines ──────────────────────────────────────────────────────────────
+window.switchRoutine = function(session, btn) {
+  state.routineSession = session;
+  document.querySelectorAll('.routine-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderRoutine();
+}
+
+function renderRoutine() {
+  const today = todayStr(); const week = weekStr();
+  const habits = state.habits.filter(h => h.session === state.routineSession);
+  if (!habits.length) { document.getElementById('routineBody').innerHTML = '<div class="weather-loading">No habits yet. Tap ✎ to add one.</div>'; return; }
+  let html = habits.map(h => {
+    if (h.type === 'daily') {
+      const done = h.lastDone === today;
+      const streak = h.streak || 0;
+      return `<div class="habit-row">
+        <div class="habit-check ${done?'done':''}" onclick="toggleHabit('${h.id}')">${done?'✓':''}</div>
+        <div class="habit-info">
+          <div class="habit-name ${done?'done':''}">${h.name}</div>
+          <div class="habit-meta">Daily</div>
+        </div>
+        ${streak > 0 ? `<div class="streak-badge">🔥 ${streak}</div>` : ''}
+      </div>`;
+    } else {
+      const done = (h.weeklyDone||[]).filter(d => d.startsWith(week.slice(0,7))).length;
+      const goal = h.weeklyGoal || 4;
+      const wstreak = h.weekStreak || 0;
+      const dots = Array.from({length:goal},(_,i) => `<div class="dot ${i<done?'filled':'open'}"></div>`).join('');
+      const isCheckedToday = (h.weeklyDone||[]).includes(today);
+      return `<div class="habit-row">
+        <div class="habit-check ${isCheckedToday?'done':''}" onclick="toggleHabit('${h.id}')">${isCheckedToday?'✓':''}</div>
+        <div class="habit-info">
+          <div class="habit-name ${isCheckedToday?'done':''}">${h.name}</div>
+          <div class="habit-meta">Goal: ${goal}× per week</div>
+          <div class="weekly-bar">
+            <div class="weekly-dots">${dots}</div>
+            <div class="weekly-label">${done} of ${goal} this week${wstreak>0?' · <strong>'+wstreak+' weeks ✓</strong>':''}</div>
+          </div>
+        </div>
+      </div>`;
+    }
+  }).join('');
+  document.getElementById('routineBody').innerHTML = html;
+}
+
+window.toggleHabit = async function(id) {
+  const today = todayStr(); const week = weekStr();
+  const h = state.habits.find(h => h.id===id);
+  if (!h) return;
+  if (h.type === 'daily') {
+    if (h.lastDone === today) {
+      h.lastDone = ''; h.streak = Math.max(0,(h.streak||0)-1);
+    } else {
+      const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+      const ystStr = yesterday.toISOString().slice(0,10);
+      h.streak = (h.lastDone === ystStr) ? (h.streak||0)+1 : 1;
+      h.bestStreak = Math.max(h.bestStreak||0, h.streak);
+      h.lastDone = today;
+    }
+  } else {
+    h.weeklyDone = h.weeklyDone || [];
+    if (h.weeklyDone.includes(today)) {
+      h.weeklyDone = h.weeklyDone.filter(d => d !== today);
+    } else {
+      h.weeklyDone.push(today);
+      const doneThisWeek = h.weeklyDone.filter(d => d.startsWith(today.slice(0,7))).length;
+      if (doneThisWeek >= h.weeklyGoal) { h.weekStreak = (h.weekStreak||0)+1; }
+    }
+  }
+  renderRoutine(); await saveToFirebase();
+}
+
+window.openHabitModal = function() { document.getElementById('habitModal').style.display='flex'; }
+window.closeHabitModal = function() { document.getElementById('habitModal').style.display='none'; document.getElementById('habitName').value=''; }
+document.getElementById('habitType').addEventListener('change', function() {
+  document.getElementById('habitGoal').style.display = this.value==='weekly' ? 'block' : 'none';
+});
+window.saveHabit = async function() {
+  const name = document.getElementById('habitName').value.trim();
+  const session = document.getElementById('habitSession').value;
+  const type = document.getElementById('habitType').value;
+  const goal = parseInt(document.getElementById('habitGoal').value) || 4;
+  if (!name) { showToast('Please enter a habit name'); return; }
+  const h = { id: Date.now().toString(), name, session, type };
+  if (type==='daily') { h.streak=0; h.bestStreak=0; h.lastDone=''; }
+  else { h.weeklyGoal=goal; h.weeklyDone=[]; h.weekStreak=0; }
+  state.habits.push(h);
+  closeHabitModal(); renderRoutine(); await saveToFirebase(); showToast('Habit added ✓');
+}
+
+// ── Catholic ──────────────────────────────────────────────────────────────
+function renderCatholic() {
+  const now = new Date();
+  // Liturgical season calculation (simplified but accurate for ordinary time/advent/lent/easter)
+  function getAdvent(year) { const xmas=new Date(year,11,25); const dow=xmas.getDay(); return new Date(year,11,25-(dow===0?28:dow+21)); }
+  function getAshWed(year) { const easter=getEaster(year); const aw=new Date(easter); aw.setDate(aw.getDate()-46); return aw; }
+  function getEaster(year) {
+    const a=year%19,b=Math.floor(year/100),c=year%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;
+    return new Date(year,month-1,day);
+  }
+  const year = now.getFullYear();
+  const easter = getEaster(year);
+  const ashWed = getAshWed(year);
+  const pentecost = new Date(easter); pentecost.setDate(pentecost.getDate()+49);
+  const advent = getAdvent(year);
+  const nextAdvent = getAdvent(year+1);
+  const christmasEnd = new Date(year,0,13);
+  const today0 = new Date(now); today0.setHours(0,0,0,0);
+  let season='', seasonColor='#006400', countdown='', feast='';
+  if (today0 >= new Date(year,11,25) || today0 <= christmasEnd) { season='Christmas Time'; seasonColor='#FFD700'; }
+  else if (today0 >= ashWed && today0 < easter) { season='Lent'; seasonColor='#6A0DAD'; const diff=Math.ceil((easter-today0)/86400000); countdown=`${diff} days until Easter`; }
+  else if (today0 >= easter && today0 < pentecost) { season='Easter Time'; seasonColor='#FFD700'; const diff=Math.ceil((pentecost-today0)/86400000); countdown=`${diff} days until Pentecost`; }
+  else if (today0 >= advent) { season='Advent'; seasonColor='#6A0DAD'; const diff=Math.ceil((new Date(year,11,25)-today0)/86400000); countdown=`${diff} days until Christmas`; }
+  else { season='Ordinary Time'; seasonColor='#006400'; const diff=Math.ceil((advent-today0)/86400000); countdown=`${diff} days until Advent`; }
+  const month = now.toLocaleString('default',{month:'long'}); const day = now.getDate();
+  feast = `${month} ${day} — Check USCCB for today's feast`;
+  document.getElementById('catholicBody').innerHTML = `
+    <div class="catholic-season"><div class="season-dot" style="background:${seasonColor}"></div><div class="season-text">${season}</div></div>
+    <div class="catholic-feast">☩ ${feast}</div>
+    <div class="catholic-countdown">${countdown}</div>
+    <a class="readings-btn" href="https://www.usccb.org/readings/${now.getFullYear().toString().slice(-2)}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.cfm" target="_blank">📖 Today's Mass Readings</a>`;
+}
+
+// ── Calendar nav ──────────────────────────────────────────────────────────
+window.changeCalDay = function(dir) {
+  state.calOffset += dir;
+  const d = new Date(); d.setDate(d.getDate()+state.calOffset);
+  const label = state.calOffset===0 ? 'Today' : state.calOffset===1 ? 'Tomorrow' : state.calOffset===-1 ? 'Yesterday' : d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
+  document.getElementById('calNavDate').textContent = label;
+}
+
+// ── Tasks ─────────────────────────────────────────────────────────────────
+const TASK_SECTIONS = [{id:'job',label:'💼 Job',cls:'tag-job',tag:'JOB'},{id:'biz',label:'🏢 Personal Business',cls:'tag-biz',tag:'BIZ'},{id:'home',label:'🏠 Home',cls:'tag-home',tag:'HOME'},{id:'camp',label:'🚐 Camper',cls:'tag-camp',tag:'CAMP'}];
+
+function renderTasks() {
+  let hasAny = false;
+  let html = '';
+  TASK_SECTIONS.forEach(sec => {
+    const items = (state.tasks[sec.id]||[]).filter(t => t.urgent || t.priority);
+    if (!items.length) return;
+    hasAny = true;
+    html += `<div class="task-section-label">${sec.label}</div>`;
+    items.forEach(t => {
+      html += `<div class="task-row">
+        <div class="task-check ${t.done?'done':''}" onclick="toggleTask('${sec.id}','${t.id}')">${t.done?'✓':''}</div>
+        <div class="task-text ${t.done?'done':''}">${t.text}</div>
+        <div class="task-flag">${t.urgent?'🔴':'⭐'}</div>
+        <div class="task-tag ${sec.cls}">${sec.tag}</div>
+      </div>`;
+    });
+  });
+  if (!hasAny) html = `<div class="task-empty">No urgent or priority tasks. Add tasks below.</div>`;
+  // Quick add
+  html += `<div class="add-task-row">
+    <input class="add-task-input" id="newTaskText" placeholder="Quick add task...">
+    <select class="add-task-select" id="newTaskSection">${TASK_SECTIONS.map(s=>`<option value="${s.id}">${s.tag}</option>`).join('')}</select>
+    <button class="add-task-btn" onclick="addTask()">Add</button>
+  </div>`;
+  document.getElementById('tasksBody').innerHTML = html;
+}
+
+window.toggleTask = async function(section, id) {
+  const t = (state.tasks[section]||[]).find(t=>t.id===id);
+  if (t) { t.done = !t.done; renderTasks(); await saveToFirebase(); }
+}
+
+window.addTask = async function() {
+  const text = document.getElementById('newTaskText')?.value?.trim();
+  const section = document.getElementById('newTaskSection')?.value;
+  if (!text) return;
+  if (!state.tasks[section]) state.tasks[section] = [];
+  state.tasks[section].push({ id:Date.now().toString(), text, done:false, urgent:false, priority:true });
+  renderTasks(); await saveToFirebase(); showToast('Task added ✓');
+}
+
+// ── Markets ───────────────────────────────────────────────────────────────
+// Using a CORS-friendly free endpoint for demo
+const WATCHLIST = [
+  {ticker:'FXAIX', name:'Fidelity S&P 500'},
+  {ticker:'VTI', name:'Vanguard Total Mkt'},
+  {ticker:'NVDA', name:'NVIDIA Corp'},
+];
+
+window.refreshMarkets = async function() {
+  document.getElementById('marketsBody').innerHTML = '<div class="market-loading">📈 Fetching market data...</div>';
+  try {
+    // Yahoo Finance via allorigins proxy for CORS
+    const indices = ['%5EDJI','%5EGSPC','%5EIXIC'];
+    const names = ['DOW','S&P 500','NASDAQ'];
+    const results = await Promise.all(indices.map(sym =>
+      fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1d`)
+        .then(r=>r.json()).catch(()=>null)
+    ));
+    let gridHtml = '';
+    results.forEach((r,i) => {
+      if (!r?.chart?.result?.[0]) { gridHtml += `<div class="market-tile"><div class="market-name">${names[i]}</div><div class="market-val">N/A</div></div>`; return; }
+      const q = r.chart.result[0].meta;
+      const price = q.regularMarketPrice?.toFixed(2) || '--';
+      const prev = q.chartPreviousClose || q.previousClose;
+      const chg = prev ? (((q.regularMarketPrice-prev)/prev)*100).toFixed(2) : null;
+      const cls = chg > 0 ? 'up' : 'dn';
+      const arrow = chg > 0 ? '▲' : '▼';
+      gridHtml += `<div class="market-tile"><div class="market-name">${names[i]}</div><div class="market-val">${Number(price).toLocaleString()}</div>${chg!==null?`<div class="market-chg ${cls}">${arrow} ${chg>0?'+':''}${chg}%</div>`:''}</div>`;
+    });
+    let stockHtml = WATCHLIST.map(s => `<div class="stock-row"><div><div class="stock-ticker">${s.ticker}</div><div class="stock-name">${s.name}</div></div><div class="stock-right"><div class="stock-price">--</div><div class="market-chg">Loading</div></div></div>`).join('');
+    const now = new Date();
+    document.getElementById('marketsBody').innerHTML = `
+      <div class="market-grid">${gridHtml}</div>
+      <div class="market-divider">My Watchlist</div>
+      ${stockHtml}
+      <div class="market-updated">Updated ${now.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</div>`;
+    // Load watchlist separately
+    WATCHLIST.forEach(async (s,i) => {
+      try {
+        const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${s.ticker}?interval=1d&range=1d`);
+        const d = await r.json();
+        const q = d.chart.result[0].meta;
+        const price = q.regularMarketPrice?.toFixed(2) || '--';
+        const prev = q.chartPreviousClose || q.previousClose;
+        const chg = prev ? (((q.regularMarketPrice-prev)/prev)*100).toFixed(2) : null;
+        const cls = chg > 0 ? 'up' : 'dn';
+        const arrow = chg > 0 ? '▲' : '▼';
+        const rows = document.querySelectorAll('.stock-row');
+        if (rows[i]) {
+          rows[i].querySelector('.stock-price').textContent = `$${Number(price).toLocaleString()}`;
+          rows[i].querySelector('.market-chg').className = `market-chg ${cls}`;
+          rows[i].querySelector('.market-chg').textContent = chg!==null ? `${arrow} ${chg>0?'+':''}${chg}%` : '--';
+        }
+      } catch(e) {}
+    });
+  } catch(e) {
+    document.getElementById('marketsBody').innerHTML = '<div class="market-loading">⚠️ Market data unavailable. Markets may be closed.</div>';
+  }
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────
+window.showToast = function(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+async function init() {
+  updateClock(); setInterval(updateClock, 1000);
+  await loadFromFirebase();
+  refreshWeather();
+  renderDates();
+  renderRoutine();
+  renderCatholic();
+  renderTasks();
+  refreshMarkets();
+  setInterval(refreshWeather, 10*60*1000);
+  setInterval(refreshMarkets, 5*60*1000);
+}
+
+init();
+</script>
+
+<!-- SERVICE WORKER REGISTRATION -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/daily-dashboard/sw.js')
+      .then(r => console.log('SW registered'))
+      .catch(e => console.log('SW error:', e));
+  });
+}
+</script>
+</body>
+</html>
