@@ -603,11 +603,7 @@ window.saveHabit=async function(){
 function getEaster(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;return new Date(y,mo-1,day);}
 function getAdvent(y){const xmas=new Date(y,11,25);const dow=xmas.getDay();return new Date(y,11,25-(dow===0?28:dow+21));}
 window.openReadings=function(){
-  const now=new Date();
-  const y=now.getFullYear().toString().slice(-2);
-  const m=String(now.getMonth()+1).padStart(2,'0');
-  const d=String(now.getDate()).padStart(2,'0');
-  window.open(`https://bible.usccb.org/bible/readings/${y}${m}${d}.cfm`,'_blank');
+  window.open('https://bible.usccb.org/daily-bible-reading','_blank');
 }
 function renderCatholic(){
   const now=new Date();const today=new Date(now);today.setHours(0,0,0,0);
@@ -681,20 +677,20 @@ async function fetchQuote(symbol){
 }
 window.refreshMarkets=async function(){
   document.getElementById('marketsBody').innerHTML='<div class="loading-msg">📈 Fetching market data...</div>';
-  const indices=[{symbol:'DIA',name:'DOW'},{symbol:'SPY',name:'S&P 500'},{symbol:'QQQ',name:'NASDAQ'}];
+  const indices=[{symbol:'DIA',name:'DOW',yahoo:'^DJI'},{symbol:'SPY',name:'S&P 500',yahoo:'^GSPC'},{symbol:'QQQ',name:'NASDAQ',yahoo:'^IXIC'}];
   const indexData=await Promise.all(indices.map(i=>fetchQuote(i.symbol)));
   let gridHtml=indices.map((idx,i)=>{
     const q=indexData[i];
-    if(!q||!q.c){return `<div class="market-tile"><div class="market-name">${idx.name}</div><div class="market-val">--</div><div class="market-chg" style="color:var(--muted)">Unavailable</div></div>`;}
+    if(!q||!q.c){return `<div class="market-tile" onclick="window.open('https://finance.yahoo.com/quote/${encodeURIComponent(idx.yahoo)}','_blank')" style="cursor:pointer"><div class="market-name">${idx.name} ↗</div><div class="market-val">--</div><div class="market-chg" style="color:var(--muted)">Unavailable</div></div>`;}
     const price=q.c.toFixed(2);const chg=((q.c-q.pc)/q.pc*100).toFixed(2);const cls=chg>0?'up':'dn';const arrow=chg>0?'▲':'▼';
-    return `<div class="market-tile"><div class="market-name">${idx.name}</div><div class="market-val">${Number(price).toLocaleString()}</div><div class="market-chg ${cls}">${arrow} ${chg>0?'+':''}${chg}%</div></div>`;
+    return `<div class="market-tile" onclick="window.open('https://finance.yahoo.com/quote/${encodeURIComponent(idx.yahoo)}','_blank')" style="cursor:pointer"><div class="market-name">${idx.name} ↗</div><div class="market-val">${Number(price).toLocaleString()}</div><div class="market-chg ${cls}">${arrow} ${chg>0?'+':''}${chg}%</div></div>`;
   }).join('');
   const watchData=await Promise.all(state.watchlist.map(s=>fetchQuote(s.ticker)));
   let stockHtml=state.watchlist.map((s,i)=>{
     const q=watchData[i];
-    if(!q||!q.c){return `<div class="stock-row"><div><div class="stock-ticker">${s.ticker}</div><div class="stock-name">${s.name}</div></div><div class="stock-right"><div class="stock-price">--</div><div class="market-chg" style="color:var(--muted)">N/A</div></div></div>`;}
+    if(!q||!q.c){return `<div class="stock-row" onclick="window.open('https://finance.yahoo.com/quote/${s.ticker}','_blank')" style="cursor:pointer"><div><div class="stock-ticker">${s.ticker} ↗</div><div class="stock-name">${s.name}</div></div><div class="stock-right"><div class="stock-price">--</div><div class="market-chg" style="color:var(--muted)">N/A</div></div></div>`;}
     const price=q.c.toFixed(2);const chg=((q.c-q.pc)/q.pc*100).toFixed(2);const cls=chg>0?'up':'dn';const arrow=chg>0?'▲':'▼';
-    return `<div class="stock-row"><div><div class="stock-ticker">${s.ticker}</div><div class="stock-name">${s.name}</div></div><div class="stock-right"><div class="stock-price">$${Number(price).toLocaleString()}</div><div class="market-chg ${cls}">${arrow} ${chg>0?'+':''}${chg}%</div></div></div>`;
+    return `<div class="stock-row" onclick="window.open('https://finance.yahoo.com/quote/${s.ticker}','_blank')" style="cursor:pointer"><div><div class="stock-ticker">${s.ticker} ↗</div><div class="stock-name">${s.name}</div></div><div class="stock-right"><div class="stock-price">$${Number(price).toLocaleString()}</div><div class="market-chg ${cls}">${arrow} ${chg>0?'+':''}${chg}%</div></div></div>`;
   }).join('');
   const now=new Date();
   document.getElementById('marketsBody').innerHTML=`
