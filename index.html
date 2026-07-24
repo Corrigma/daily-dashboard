@@ -863,39 +863,45 @@ function renderLPTasks(){
   let html='',hasAny=false;
   lists.forEach(list=>{
     const meta=tagMeta[list];
-    const flaggedProjects=(state.projects[list]||[]).filter(p=>!p.done&&(p.flag==='urgent'||p.flag==='priority'));
-    // Also find flagged subtasks from non-flagged projects
-    const flaggedSubs=[];
-    (state.projects[list]||[]).filter(p=>!p.done&&p.flag!=='urgent'&&p.flag!=='priority').forEach(p=>{
-      (p.subtasks||[]).filter(s=>!s.done&&(s.flag==='urgent'||s.flag==='priority')).forEach(s=>{
-        flaggedSubs.push({...s,projectName:p.name,projectId:p.id,list});
-      });
+    // Collect all projects that have a flag OR have flagged subtasks
+    const relevantProjects=(state.projects[list]||[]).filter(p=>{
+      if(p.done)return false;
+      if(p.flag==='urgent'||p.flag==='priority')return true;
+      return (p.subtasks||[]).some(s=>!s.done&&(s.flag==='urgent'||s.flag==='priority'));
     });
-    if(!flaggedProjects.length&&!flaggedSubs.length)return;
+    if(!relevantProjects.length)return;
     hasAny=true;
     const label=list==='job'?'💼 Job':list==='biz'?'🏢 Personal Business':list==='home'?'🏠 Home':'🚐 Camper';
     html+=`<div class="lp-section-label">${label}</div>`;
-    flaggedProjects.forEach(p=>{
-      const subtasks=p.subtasks||[];const done=subtasks.filter(s=>s.done).length;const total=subtasks.length;
-      const pct=total?Math.round(done/total*100):0;
+    relevantProjects.forEach(p=>{
+      const subtasks=p.subtasks||[];
+      const allDone=subtasks.filter(s=>s.done).length;
+      const allTotal=subtasks.length;
+      const pct=allTotal?Math.round(allDone/allTotal*100):0;
+      const isProjectFlagged=p.flag==='urgent'||p.flag==='priority';
+      // Flagged subtasks to show nested
+      const flaggedSubs=subtasks.filter(s=>!s.done&&(s.flag==='urgent'||s.flag==='priority'));
+      // Project row — show flag only if project itself is flagged
       html+=`<div class="lp-task-row" onclick="openProject('${p.id}','${list}')">
         <div class="lp-task-left">
           <div class="lp-task-name">${p.name}</div>
-          ${total>0?`<div class="lp-task-progress">${done}/${total} subtasks</div><div class="lp-progress-bar"><div class="lp-progress-fill" style="width:${pct}%"></div></div>`:''}
+          ${allTotal>0?`<div class="lp-task-progress">${allDone}/${allTotal} subtasks</div><div class="lp-progress-bar"><div class="lp-progress-fill" style="width:${pct}%"></div></div>`:''}
         </div>
-        <div class="lp-task-flag">${p.flag==='urgent'?'🔴':'⭐'}</div>
+        ${isProjectFlagged?`<div class="lp-task-flag">${p.flag==='urgent'?'🔴':'⭐'}</div>`:'<div style="width:22px"></div>'}
         <div class="lp-task-tag ${meta.cls}">${meta.tag}</div>
       </div>`;
-    });
-    flaggedSubs.forEach(s=>{
-      html+=`<div class="lp-task-row" onclick="openProject('${s.projectId}','${s.list}')">
-        <div class="lp-task-left">
-          <div class="lp-task-name">${s.name}</div>
-          <div class="lp-task-progress">in ${s.projectName}</div>
-        </div>
-        <div class="lp-task-flag">${s.flag==='urgent'?'🔴':'⭐'}</div>
-        <div class="lp-task-tag ${meta.cls}">${meta.tag}</div>
-      </div>`;
+      // Nested flagged subtasks indented under project
+      if(flaggedSubs.length){
+        flaggedSubs.forEach(s=>{
+          html+=`<div class="lp-task-row" onclick="openProject('${p.id}','${list}')" style="margin-left:20px;margin-top:-4px;border-left:3px solid var(--border);border-radius:0 10px 10px 0;border-top-left-radius:0;border-bottom-left-radius:0;">
+            <div class="lp-task-left">
+              <div class="lp-task-name" style="font-size:13px;font-weight:500">↳ ${s.name}</div>
+            </div>
+            <div class="lp-task-flag">${s.flag==='urgent'?'🔴':'⭐'}</div>
+            <div style="width:30px"></div>
+          </div>`;
+        });
+      }
     });
   });
   if(!hasAny)html='<div class="loading-msg">No urgent or priority tasks. Go to Task Manager to add projects.</div>';
