@@ -104,6 +104,12 @@ body { font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif; backgro
 .cal-nav-date { font-size:14px; font-weight:700; color:var(--navy); }
 .cal-empty { color:var(--muted); font-size:14px; text-align:center; padding:12px 0; }
 .cal-connect-btn { display:flex; align-items:center; justify-content:center; gap:8px; background:var(--navy); color:var(--gold); border:none; border-radius:8px; padding:10px 16px; font-size:13px; font-weight:600; cursor:pointer; width:100%; margin-top:8px; }
+.cal-event { display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); }
+.cal-event:last-child { border-bottom:none; padding-bottom:0; }
+.cal-time { font-size:11px; font-weight:700; color:var(--gold); min-width:52px; padding-top:2px; font-variant-numeric:tabular-nums; flex-shrink:0; }
+.cal-dot { width:8px; height:8px; border-radius:50%; margin-top:5px; flex-shrink:0; }
+.cal-title { font-size:14px; font-weight:500; color:var(--navy); line-height:1.3; }
+.cal-sub { font-size:12px; color:var(--muted); margin-top:1px; }
 
 /* ── LANDING TASKS ── */
 .lp-section-label { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); margin:10px 0 6px; }
@@ -290,7 +296,7 @@ body { font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif; backgro
     <div class="card">
       <div class="card-header">
         <span class="card-title">Calendar</span>
-        <button class="card-action" onclick="showToast('Full calendar coming soon')">›</button>
+        <button class="card-action" id="calSignBtn" onclick="calSignIn()" style="display:none">Connect</button>
       </div>
       <div class="card-body">
         <div class="cal-nav">
@@ -298,8 +304,7 @@ body { font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif; backgro
           <div class="cal-nav-date" id="calNavDate">Today</div>
           <button class="cal-nav-btn" onclick="changeCalDay(1)">›</button>
         </div>
-        <div class="cal-empty">Connect Google Calendar to see your events.</div>
-        <button class="cal-connect-btn" onclick="showToast('Google Calendar setup coming in next update')">📅 Connect Google Calendar</button>
+        <div id="calBody"><div class="loading-msg">Loading calendar...</div></div>
       </div>
     </div>
     <!-- TASKS (landing) -->
@@ -785,10 +790,100 @@ function renderCatholic(){
 }
 
 // ── CALENDAR ───────────────────────────────────────────────────────────────
-window.changeCalDay=function(dir){
-  state.calOffset+=dir;const d=new Date();d.setDate(d.getDate()+state.calOffset);
+const GCAL_CLIENT_ID = '%%GOOGLE_CLIENT_ID%%';
+const GCAL_SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
+let calTokenClient = null;
+let calAccessToken = null;
+let calTokenExpiry = 0;
+
+function initCalendar(){
+  if(!window.google?.accounts?.oauth2) { setTimeout(initCalendar, 500); return; }
+  calTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GCAL_CLIENT_ID,
+    scope: GCAL_SCOPES,
+    callback: async (resp) => {
+      if(resp.error){ document.getElementById('calBody').innerHTML='<div class="cal-empty">⚠️ Calendar access denied.</div>'; return; }
+      calAccessToken = resp.access_token;
+      calTokenExpiry = Date.now() + (resp.expires_in * 1000);
+      localStorage.setItem('calToken', calAccessToken);
+      localStorage.setItem('calTokenExpiry', calTokenExpiry);
+      document.getElementById('calSignBtn').style.display='none';
+      await renderCalendar();
+    }
+  });
+  // Try to restore token from localStorage
+  const savedToken = localStorage.getItem('calToken');
+  const savedExpiry = parseInt(localStorage.getItem('calTokenExpiry')||'0');
+  if(savedToken && savedExpiry > Date.now()+60000){
+    calAccessToken = savedToken;
+    calTokenExpiry = savedExpiry;
+    renderCalendar();
+  } else {
+    document.getElementById('calSignBtn').style.display='block';
+    document.getElementById('calBody').innerHTML=`<div class="cal-empty">Tap "Connect" above to see your Google Calendar events.</div>`;
+  }
+}
+
+window.calSignIn=function(){
+  if(calTokenClient) calTokenClient.requestAccessToken();
+}
+
+window.changeCalDay=async function(dir){
+  state.calOffset+=dir;
+  const d=new Date();d.setDate(d.getDate()+state.calOffset);
   const label=state.calOffset===0?'Today':state.calOffset===1?'Tomorrow':state.calOffset===-1?'Yesterday':d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
   document.getElementById('calNavDate').textContent=label;
+  await renderCalendar();
+}
+
+async function renderCalendar(){
+  if(!calAccessToken || Date.now() > calTokenExpiry){
+    document.getElementById('calSignBtn').style.display='block';
+    document.getElementById('calBody').innerHTML='<div class="cal-empty">Session expired. Tap "Connect" to reconnect.</div>';
+    return;
+  }
+  document.getElementById('calBody').innerHTML='<div class="loading-msg">Loading events...</div>';
+  try{
+    const d=new Date();d.setDate(d.getDate()+state.calOffset);
+    const start=new Date(d);start.setHours(0,0,0,0);
+    const end=new Date(d);end.setHours(23,59,59,999);
+    const url=`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${start.toISOString()}&timeMax=${end.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=20`;
+    const r=await fetch(url,{headers:{Authorization:`Bearer ${calAccessToken}`}});
+    if(!r.ok){
+      if(r.status===401){
+        calAccessToken=null;
+        document.getElementById('calSignBtn').style.display='block';
+        document.getElementById('calBody').innerHTML='<div class="cal-empty">Session expired. Tap "Connect" to reconnect.</div>';
+      } else {
+        document.getElementById('calBody').innerHTML='<div class="cal-empty">⚠️ Could not load calendar.</div>';
+      }
+      return;
+    }
+    const data=await r.json();
+    const events=data.items||[];
+    if(!events.length){
+      document.getElementById('calBody').innerHTML='<div class="cal-empty">No events scheduled.</div>';
+      return;
+    }
+    const colors=['#C9A84C','#2E7D9C','#3949AB','#C0392B','#2E7D52','#8B6914','#6A0DAD'];
+    document.getElementById('calBody').innerHTML=events.map((ev,i)=>{
+      const isAllDay=!ev.start.dateTime;
+      const startTime=isAllDay?'All day':new Date(ev.start.dateTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+      const endTime=isAllDay?'':new Date(ev.end.dateTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+      const location=ev.location?`<div class="cal-sub">📍 ${ev.location}</div>`:'';
+      const duration=(!isAllDay&&ev.start.dateTime&&ev.end.dateTime)?`<div class="cal-sub">Until ${endTime}</div>`:'';
+      return `<div class="cal-event">
+        <div class="cal-time">${startTime}</div>
+        <div class="cal-dot" style="background:${colors[i%colors.length]}"></div>
+        <div>
+          <div class="cal-title">${ev.summary||'(No title)'}</div>
+          ${location}${duration}
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){
+    document.getElementById('calBody').innerHTML='<div class="cal-empty">⚠️ Calendar unavailable.</div>';
+  }
 }
 
 // ── TASK MANAGER ───────────────────────────────────────────────────────────
@@ -1063,6 +1158,7 @@ async function init(){
       document.getElementById('tab-morning').classList.toggle('active',state.routineSession==='morning');
       document.getElementById('tab-evening').classList.toggle('active',state.routineSession==='evening');
       refreshWeather();renderDates();renderRoutine();renderCatholic();renderLPTasks();refreshMarkets();
+      initCalendar();
       // Auto-refresh when app comes back into focus
   document.addEventListener('visibilitychange', ()=>{
     if(!document.hidden){
@@ -1098,6 +1194,7 @@ window.signInWithGoogle=async function(){
 
 init();
 </script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/daily-dashboard/sw.js').catch(e=>console.log('SW:',e));});}</script>
 </body>
 </html>
