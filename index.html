@@ -847,34 +847,48 @@ async function renderCalendar(){
     const d=new Date();d.setDate(d.getDate()+state.calOffset);
     const start=new Date(d);start.setHours(0,0,0,0);
     const end=new Date(d);end.setHours(23,59,59,999);
-    const url=`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${start.toISOString()}&timeMax=${end.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=20`;
-    const r=await fetch(url,{headers:{Authorization:`Bearer ${calAccessToken}`}});
-    if(!r.ok){
-      if(r.status===401){
-        calAccessToken=null;
-        document.getElementById('calSignBtn').style.display='block';
-        document.getElementById('calBody').innerHTML='<div class="cal-empty">Session expired. Tap "Connect" to reconnect.</div>';
-      } else {
-        document.getElementById('calBody').innerHTML='<div class="cal-empty">⚠️ Could not load calendar.</div>';
-      }
-      return;
-    }
-    const data=await r.json();
-    const events=data.items||[];
+
+    // First get list of all calendars
+    const calListR=await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList',{
+      headers:{Authorization:`Bearer ${calAccessToken}`}
+    });
+    if(!calListR.ok){ throw new Error('Calendar list failed'); }
+    const calList=await calListR.json();
+    const calendars=calList.items||[];
+
+    // Fetch events from all calendars in parallel
+    const allEvents=await Promise.all(calendars.map(async cal=>{
+      try{
+        const url=`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events?timeMin=${start.toISOString()}&timeMax=${end.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=20`;
+        const r=await fetch(url,{headers:{Authorization:`Bearer ${calAccessToken}`}});
+        if(!r.ok) return [];
+        const data=await r.json();
+        // Tag each event with calendar color and name
+        return (data.items||[]).map(ev=>({...ev,_calColor:cal.backgroundColor||'#C9A84C',_calName:cal.summary}));
+      }catch(e){return [];}
+    }));
+
+    // Flatten and sort by start time
+    const events=allEvents.flat().sort((a,b)=>{
+      const aTime=a.start.dateTime||a.start.date;
+      const bTime=b.start.dateTime||b.start.date;
+      return aTime.localeCompare(bTime);
+    });
+
     if(!events.length){
       document.getElementById('calBody').innerHTML='<div class="cal-empty">No events scheduled.</div>';
       return;
     }
-    const colors=['#C9A84C','#2E7D9C','#3949AB','#C0392B','#2E7D52','#8B6914','#6A0DAD'];
-    document.getElementById('calBody').innerHTML=events.map((ev,i)=>{
+
+    document.getElementById('calBody').innerHTML=events.map(ev=>{
       const isAllDay=!ev.start.dateTime;
       const startTime=isAllDay?'All day':new Date(ev.start.dateTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
       const endTime=isAllDay?'':new Date(ev.end.dateTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
       const location=ev.location?`<div class="cal-sub">📍 ${ev.location}</div>`:'';
-      const duration=(!isAllDay&&ev.start.dateTime&&ev.end.dateTime)?`<div class="cal-sub">Until ${endTime}</div>`:'';
+      const duration=(!isAllDay&&ev.start.dateTime&&ev.end.dateTime)?`<div class="cal-sub">Until ${endTime} · ${ev._calName}</div>`:`<div class="cal-sub">${ev._calName}</div>`;
       return `<div class="cal-event">
         <div class="cal-time">${startTime}</div>
-        <div class="cal-dot" style="background:${colors[i%colors.length]}"></div>
+        <div class="cal-dot" style="background:${ev._calColor}"></div>
         <div>
           <div class="cal-title">${ev.summary||'(No title)'}</div>
           ${location}${duration}
@@ -882,7 +896,13 @@ async function renderCalendar(){
       </div>`;
     }).join('');
   }catch(e){
-    document.getElementById('calBody').innerHTML='<div class="cal-empty">⚠️ Calendar unavailable.</div>';
+    if(e.message==='401'){
+      calAccessToken=null;
+      document.getElementById('calSignBtn').style.display='block';
+      document.getElementById('calBody').innerHTML='<div class="cal-empty">Session expired. Tap "Connect" to reconnect.</div>';
+    } else {
+      document.getElementById('calBody').innerHTML='<div class="cal-empty">⚠️ Calendar unavailable.</div>';
+    }
   }
 }
 
