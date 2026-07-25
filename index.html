@@ -248,7 +248,10 @@ body { font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif; backgro
         <div class="header-date" id="headerDate">Loading...</div>
         <div class="header-greeting" id="headerGreeting">Good morning, Mark</div>
       </div>
-      <div class="header-time" id="headerTime">--:--<sup>--</sup></div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <div class="header-time" id="headerTime">--:--<sup>--</sup></div>
+        <button onclick="refreshAll()" style="background:none;border:1.5px solid var(--gold);color:var(--gold);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;cursor:pointer;letter-spacing:0.5px">↻ Refresh</button>
+      </div>
     </div>
   </div>
   <div class="page">
@@ -567,6 +570,12 @@ window.showScreen=function(name, fromLanding){
   if(name==='tasks') renderTM();
   if(name==='landing') renderLPTasks();
   if(name==='events') renderAllEvents();
+}
+
+window.refreshAll=function(){
+  showToast('Refreshing...');
+  refreshWeather();refreshMarkets();renderDates();renderRoutine();renderCatholic();renderLPTasks();
+  if(calAccessToken) renderCalendar();
 }
 
 // ── CLOCK ──────────────────────────────────────────────────────────────────
@@ -1188,19 +1197,9 @@ async function init(){
       renderRoutine();
       renderCatholic();
       renderLPTasks();
+      if(calAccessToken) renderCalendar();
     }
   });
-
-  // Pull-to-refresh on landing page
-  let touchStartY=0;
-  document.addEventListener('touchstart',e=>{touchStartY=e.touches[0].clientY;},{passive:true});
-  document.addEventListener('touchend',e=>{
-    const diff=e.changedTouches[0].clientY-touchStartY;
-    if(diff>80&&window.scrollY===0&&document.getElementById('screen-landing').classList.contains('active')){
-      showToast('Refreshing...');
-      refreshWeather();refreshMarkets();renderDates();renderRoutine();renderCatholic();renderLPTasks();
-    }
-  },{passive:true});
 
   setInterval(refreshWeather,10*60*1000);setInterval(refreshMarkets,5*60*1000);
     } else {
