@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Daily Dashboard">
+<meta name="theme-color" content="#1A2035">
+<title>Mark's Daily Dashboard</title>
+<link rel="manifest" href="manifest.json">
+<style>
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+:root {
+  --navy:#1A2035; --gold:#C9A84C; --slate:#3A4560; --card:#FFFFFF;
+  --bg:#F0F2F7; --text:#1A2035; --muted:#6B7280; --border:#E2E6EF;
+  --green:#2E7D52; --red:#C0392B; --rule:4px solid var(--gold);
+}
+body { font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; }
+
+/* ── SCREENS ── */
+.screen { display:none; min-height:100vh; padding-bottom:40px; }
+.screen.active { display:block; }
+
+/* ── HEADER ── */
+.header { background:linear-gradient(160deg,#1A2035 0%,#2C3A5C 100%); padding:48px 20px 16px; position:sticky; top:0; z-index:100; }
+.header-top { display:flex; justify-content:space-between; align-items:flex-start; }
+.header-date { font-size:11px; letter-spacing:2px; color:var(--gold); text-transform:uppercase; margin-bottom:2px; }
+.header-greeting { font-size:20px; font-weight:700; color:#fff; }
+.header-time { font-size:32px; font-weight:300; color:#fff; letter-spacing:-1px; font-variant-numeric:tabular-nums; }
+.header-time sup { font-size:13px; color:var(--gold); font-weight:600; vertical-align:super; margin-left:2px; }
+
+/* ── SUBHEADER (task screens) ── */
+.subheader { background:linear-gradient(160deg,#1A2035 0%,#2C3A5C 100%); padding:48px 20px 16px; position:sticky; top:0; z-index:100; display:flex; align-items:center; gap:12px; }
+.back-btn { background:none; border:none; color:var(--gold); font-size:28px; cursor:pointer; padding:0 4px; line-height:1; flex-shrink:0; }
+.subheader-title { font-size:18px; font-weight:700; color:#fff; flex:1; }
+.subheader-action { background:none; border:none; color:var(--gold); font-size:24px; cursor:pointer; padding:0 4px; }
+
+/* ── CARDS ── */
+.page { padding:14px 16px 0; }
+.card { background:var(--card); border-radius:14px; border-left:var(--rule); margin-bottom:12px; overflow:hidden; box-shadow:0 2px 8px #1A203512; }
+.card-header { display:flex; align-items:center; justify-content:space-between; padding:13px 16px 10px; border-bottom:1px solid var(--border); }
+.card-title { font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--slate); }
+.card-action { font-size:20px; color:var(--gold); cursor:pointer; line-height:1; padding:4px 6px; border:none; background:none; }
+.card-body { padding:12px 16px 14px; }
+.loading-msg { color:var(--muted); font-size:14px; padding:16px 0; text-align:center; }
+
+/* ── WEATHER ── */
+.weather-main { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.weather-temp { font-size:52px; font-weight:200; color:var(--navy); letter-spacing:-2px; line-height:1; }
+.weather-temp sup { font-size:22px; font-weight:400; vertical-align:super; color:var(--muted); }
+.weather-icon { font-size:48px; line-height:1; }
+.weather-desc { font-size:14px; color:var(--muted); margin-bottom:8px; }
+.weather-pills { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+.pill { background:var(--bg); border-radius:20px; padding:4px 10px; font-size:12px; color:var(--slate); font-weight:500; }
+.pill strong { color:var(--navy); }
+.moon-pill { display:inline-flex; align-items:center; gap:5px; background:var(--navy); color:var(--gold); border-radius:20px; padding:4px 10px; font-size:12px; font-weight:600; }
+.weather-sun { display:flex; flex-wrap:wrap; gap:12px; font-size:12px; color:var(--muted); padding-top:8px; border-top:1px solid var(--border); }
+.weather-sun span { display:flex; align-items:center; gap:4px; }
+
+/* ── DATES ── */
+.date-item { display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--border); }
+.date-item:last-child { border-bottom:none; padding-bottom:0; }
+.date-badge { min-width:48px; height:48px; border-radius:10px; background:var(--navy); color:var(--gold); display:flex; flex-direction:column; align-items:center; justify-content:center; font-weight:700; flex-shrink:0; }
+.date-badge .days { font-size:17px; line-height:1; }
+.date-badge .dlabel { font-size:8px; letter-spacing:1px; text-transform:uppercase; opacity:0.8; }
+.date-info { flex:1; }
+.date-name { font-size:14px; font-weight:600; color:var(--navy); }
+.date-when { font-size:12px; color:var(--muted); margin-top:1px; }
+.date-recur { font-size:10px; color:var(--gold); font-weight:600; margin-top:2px; }
+.add-dashed-btn { display:flex; align-items:center; justify-content:center; gap:6px; background:none; border:1.5px dashed var(--gold); color:var(--gold); border-radius:8px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer; margin-top:10px; width:100%; }
+
+/* ── ROUTINE ── */
+.routine-tabs { display:flex; gap:0; margin-bottom:12px; background:var(--bg); border-radius:8px; padding:3px; }
+.routine-tab { flex:1; text-align:center; padding:7px; border-radius:6px; font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; border:none; background:none; }
+.routine-tab.active { background:var(--navy); color:var(--gold); }
+.habit-row { display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); }
+.habit-row:last-child { border-bottom:none; padding-bottom:0; }
+.habit-check { width:26px; height:26px; border-radius:50%; border:2px solid var(--gold); background:transparent; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff; cursor:pointer; }
+.habit-check.done { background:var(--green); border-color:var(--green); }
+.habit-info { flex:1; min-width:0; }
+.habit-name { font-size:14px; font-weight:500; color:var(--navy); }
+.habit-name.done { text-decoration:line-through; color:var(--muted); }
+.habit-meta { font-size:11px; color:var(--muted); margin-top:2px; }
+.streak-row { display:flex; align-items:center; gap:8px; margin-top:4px; flex-wrap:wrap; }
+.streak-badge { font-size:11px; font-weight:700; color:var(--gold); background:var(--navy); border-radius:10px; padding:3px 8px; white-space:nowrap; }
+.best-badge { font-size:11px; font-weight:600; color:var(--muted); background:var(--bg); border-radius:10px; padding:3px 8px; white-space:nowrap; }
+.weekly-bar { display:flex; align-items:center; gap:6px; margin-top:4px; flex-wrap:wrap; }
+.weekly-dots { display:flex; gap:3px; }
+.dot { width:9px; height:9px; border-radius:50%; background:var(--border); }
+.dot.filled { background:var(--green); }
+.weekly-label { font-size:11px; color:var(--muted); }
+
+/* ── CATHOLIC ── */
+.catholic-season { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.season-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+.season-text { font-size:13px; color:var(--slate); font-weight:500; }
+.catholic-countdown { font-size:12px; color:var(--muted); margin-bottom:12px; }
+.readings-btn { display:inline-flex; align-items:center; gap:6px; background:var(--navy); color:var(--gold); border-radius:8px; padding:10px 16px; font-size:13px; font-weight:600; text-decoration:none; cursor:pointer; border:none; }
+
+/* ── CALENDAR ── */
+.cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.cal-nav-btn { width:34px; height:34px; border-radius:8px; background:var(--bg); border:none; cursor:pointer; font-size:18px; color:var(--slate); display:flex; align-items:center; justify-content:center; }
+.cal-nav-date { font-size:14px; font-weight:700; color:var(--navy); }
+.cal-empty { color:var(--muted); font-size:14px; text-align:center; padding:12px 0; }
+.cal-connect-btn { display:flex; align-items:center; justify-content:center; gap:8px; background:var(--navy); color:var(--gold); border:none; border-radius:8px; padding:10px 16px; font-size:13px; font-weight:600; cursor:pointer; width:100%; margin-top:8px; }
+
+/* ── LANDING TASKS ── */
+.lp-section-label { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); margin:10px 0 6px; }
+.lp-section-label:first-child { margin-top:0; }
+.lp-task-row { display:flex; align-items:flex-start; gap:8px; padding:8px 10px; border-radius:10px; border:1px solid var(--border); margin-bottom:6px; cursor:pointer; background:#fff; transition:background 0.1s; }
+.lp-task-row:active { background:var(--bg); }
+.lp-task-left { flex:1; min-width:0; }
+.lp-task-name { font-size:14px; font-weight:600; color:var(--navy); }
+.lp-task-progress { font-size:11px; color:var(--muted); margin-top:2px; }
+.lp-task-flag { font-size:14px; flex-shrink:0; }
+.lp-task-tag { font-size:10px; font-weight:700; border-radius:6px; padding:2px 6px; flex-shrink:0; margin-top:2px; }
+.tag-job { background:#EBF5EC; color:#2E7D52; }
+.tag-biz { background:#EEF0FB; color:#3949AB; }
+.tag-home { background:#FBF6EC; color:#8B6914; }
+.tag-camp { background:#EDF5ED; color:#4E8B4E; }
+.lp-progress-bar { height:3px; background:#eee; border-radius:3px; margin-top:4px; overflow:hidden; }
+.lp-progress-fill { height:100%; background:var(--gold); border-radius:3px; transition:width 0.3s; }
+
+/* ── MARKETS ── */
+.market-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:12px; }
+.market-tile { background:var(--bg); border-radius:10px; padding:10px; cursor:pointer; }
+.market-name { font-size:10px; font-weight:700; color:var(--muted); letter-spacing:0.5px; margin-bottom:4px; }
+.market-val { font-size:15px; font-weight:700; color:var(--navy); letter-spacing:-0.5px; }
+.market-chg { font-size:11px; font-weight:600; margin-top:2px; }
+.up { color:var(--green); } .dn { color:var(--red); }
+.section-divider { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
+.stock-row { display:flex; align-items:center; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--border); font-size:13px; cursor:pointer; }
+.stock-row:last-child { border-bottom:none; }
+.stock-ticker { font-weight:700; color:var(--navy); }
+.stock-name { color:var(--muted); font-size:11px; }
+.stock-right { text-align:right; }
+.stock-price { font-weight:600; color:var(--navy); }
+.market-updated { font-size:10px; color:var(--muted); text-align:right; margin-top:8px; }
+
+/* ── HUNTING ── */
+.hunting-btn { display:flex; align-items:center; gap:12px; background:linear-gradient(135deg,#1A2E1A,#2D4A2D); border-radius:14px; padding:18px 20px; margin:4px 16px 16px; cursor:pointer; border-left:var(--rule); border-top:none; border-right:none; border-bottom:none; width:calc(100% - 32px); box-shadow:0 2px 8px #1A2E1A22; }
+.hunting-icon { font-size:28px; }
+.hunting-text { color:#fff; text-align:left; }
+.hunting-title { font-size:16px; font-weight:700; }
+.hunting-sub { font-size:12px; color:#82C882; margin-top:2px; }
+.hunting-arrow { color:var(--gold); font-size:22px; margin-left:auto; }
+.scripture { text-align:center; padding:8px 20px 0; font-size:12px; color:var(--muted); font-style:italic; }
+
+/* ── TASK MANAGER SCREEN ── */
+.list-tabs { display:flex; overflow-x:auto; gap:0; background:var(--bg); padding:3px; border-radius:10px; margin:14px 16px 0; scrollbar-width:none; }
+.list-tab { flex-shrink:0; padding:8px 14px; border-radius:8px; font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; border:none; background:none; white-space:nowrap; }
+.list-tab.active { background:var(--navy); color:var(--gold); }
+.tm-toolbar { display:flex; gap:8px; padding:10px 16px; align-items:center; }
+.filter-btn { padding:6px 12px; border-radius:20px; border:1.5px solid var(--border); background:#fff; font-size:12px; font-weight:600; color:var(--muted); cursor:pointer; }
+.filter-btn.active { border-color:var(--gold); color:var(--gold); background:#fff; }
+.archive-btn { margin-left:auto; padding:6px 12px; border-radius:20px; border:1.5px solid var(--border); background:#fff; font-size:12px; font-weight:600; color:var(--muted); cursor:pointer; }
+
+/* Project cards in task manager */
+.project-card { background:#fff; border-radius:12px; border-left:4px solid var(--gold); margin:0 16px 10px; padding:14px; box-shadow:0 1px 4px #0000000a; cursor:pointer; }
+.project-card.urgent-card { border-left-color:var(--red); }
+.project-header { display:flex; align-items:flex-start; gap:10px; }
+.project-check { width:24px; height:24px; border-radius:50%; border:2px solid var(--gold); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:12px; color:#fff; cursor:pointer; margin-top:1px; }
+.project-check.done { background:var(--green); border-color:var(--green); }
+.project-check.urgent { border-color:var(--red); }
+.project-info { flex:1; min-width:0; }
+.project-name { font-size:15px; font-weight:700; color:var(--navy); }
+.project-name.done { text-decoration:line-through; color:var(--muted); }
+.project-meta { display:flex; gap:8px; align-items:center; margin-top:4px; flex-wrap:wrap; }
+.project-flag { font-size:13px; }
+.project-due { font-size:11px; color:var(--muted); }
+.project-due.overdue { color:var(--red); font-weight:600; }
+.project-arrow { color:var(--muted); font-size:18px; flex-shrink:0; }
+.project-progress { margin-top:10px; }
+.progress-bar { height:5px; background:#eee; border-radius:5px; overflow:hidden; }
+.progress-fill { height:100%; background:var(--green); border-radius:5px; transition:width 0.3s; }
+.progress-label { font-size:11px; color:var(--muted); margin-top:3px; }
+.no-projects { text-align:center; padding:40px 20px; color:var(--muted); font-size:14px; }
+.add-project-fab { position:fixed; bottom:24px; right:20px; width:56px; height:56px; border-radius:50%; background:var(--navy); color:var(--gold); border:none; font-size:28px; cursor:pointer; box-shadow:0 4px 12px #1A203540; display:flex; align-items:center; justify-content:center; z-index:50; }
+
+/* ── PROJECT DETAIL SCREEN ── */
+.project-detail-meta { background:#fff; border-radius:12px; border-left:var(--rule); margin:14px 16px 0; padding:14px; box-shadow:0 1px 4px #0000000a; }
+.detail-flag-row { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+.flag-chip { padding:6px 14px; border-radius:20px; border:1.5px solid var(--border); font-size:13px; font-weight:600; cursor:pointer; background:#fff; color:var(--muted); }
+.flag-chip.urgent-active { border-color:var(--red); color:var(--red); background:#FEE2E2; }
+.flag-chip.priority-active { border-color:var(--gold); color:var(--gold); background:#FEF9EC; }
+.detail-notes { width:100%; padding:10px; border:1.5px solid var(--border); border-radius:8px; font-size:14px; color:var(--navy); resize:none; min-height:60px; font-family:inherit; margin-top:8px; }
+.detail-due { display:flex; align-items:center; gap:8px; margin-top:8px; }
+.detail-due label { font-size:13px; color:var(--muted); font-weight:600; }
+.detail-due input { padding:7px 10px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; color:var(--navy); }
+.subtasks-section { padding:0 16px; margin-top:12px; }
+.subtasks-title { font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--slate); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+.subtask-row { display:flex; align-items:flex-start; gap:10px; padding:10px 14px; background:#fff; border-radius:10px; border:1px solid var(--border); margin-bottom:8px; }
+.subtask-check { width:22px; height:22px; border-radius:50%; border:2px solid var(--gold); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:11px; color:#fff; cursor:pointer; margin-top:1px; }
+.subtask-check.done { background:var(--green); border-color:var(--green); }
+.subtask-check.urgent { border-color:var(--red); }
+.subtask-info { flex:1; min-width:0; }
+.subtask-name { font-size:14px; font-weight:500; color:var(--navy); }
+.subtask-name.done { text-decoration:line-through; color:var(--muted); }
+.subtask-due { font-size:11px; color:var(--muted); margin-top:2px; }
+.subtask-flags { display:flex; gap:6px; margin-top:4px; }
+.subtask-flag-btn { font-size:11px; padding:2px 8px; border-radius:10px; border:1px solid var(--border); background:#fff; cursor:pointer; font-weight:600; color:var(--muted); }
+.subtask-flag-btn.urgent-active { border-color:var(--red); color:var(--red); background:#FEE2E2; }
+.subtask-flag-btn.priority-active { border-color:var(--gold); color:var(--gold); background:#FEF9EC; }
+.subtask-delete { color:#ddd; font-size:18px; cursor:pointer; background:none; border:none; flex-shrink:0; }
+.add-subtask-row { display:flex; gap:8px; margin-top:4px; }
+.add-subtask-input { flex:1; padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:14px; color:var(--navy); background:#fafafa; }
+.add-subtask-btn { padding:9px 16px; background:var(--navy); color:var(--gold); border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; }
+.detail-actions { display:flex; gap:8px; padding:14px 16px 0; }
+.btn-save { flex:1; padding:12px; background:var(--navy); color:var(--gold); border:none; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; }
+.btn-archive { padding:12px 16px; background:#F0F2F7; color:var(--slate); border:none; border-radius:10px; font-size:15px; font-weight:600; cursor:pointer; }
+.btn-delete { padding:12px 16px; background:#FEE2E2; color:var(--red); border:none; border-radius:10px; font-size:15px; font-weight:600; cursor:pointer; }
+
+/* ── MODAL ── */
+.modal-overlay { position:fixed; inset:0; background:#0009; z-index:200; display:flex; align-items:center; justify-content:center; padding:20px; }
+.modal { background:#fff; border-radius:16px; padding:24px; width:100%; max-width:440px; max-height:90vh; overflow-y:auto; }
+.modal h3 { font-size:16px; font-weight:700; color:var(--navy); margin-bottom:16px; }
+.modal-label { font-size:12px; font-weight:600; color:var(--slate); margin-bottom:4px; display:block; margin-top:10px; }
+.modal input, .modal select, .modal textarea { width:100%; padding:10px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:15px; margin-bottom:4px; color:var(--navy); background:#fff; font-family:inherit; }
+.modal textarea { resize:none; min-height:70px; }
+.modal-flag-row { display:flex; gap:8px; margin:8px 0; }
+.modal-btns { display:flex; gap:8px; margin-top:14px; }
+.btn-primary { flex:1; padding:11px; background:var(--navy); color:var(--gold); border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; }
+.btn-secondary { flex:1; padding:11px; background:var(--bg); color:var(--slate); border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; }
+
+/* ── WATCHLIST MODAL ── */
+.watchlist-item { display:flex; align-items:center; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--border); }
+.watchlist-item:last-child { border-bottom:none; }
+
+/* ── TOAST ── */
+.toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--navy); color:var(--gold); padding:10px 20px; border-radius:20px; font-size:13px; font-weight:600; z-index:300; opacity:0; transition:opacity 0.3s; pointer-events:none; white-space:nowrap; }
+.toast.show { opacity:1; }
+</style>
+</head>
+<body>
+
+<!-- ══ SCREEN: LANDING ══════════════════════════════════════════════════ -->
+<div id="screen-landing" class="screen active">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="header-date" id="headerDate">Loading...</div>
+        <div class="header-greeting" id="headerGreeting">Good morning, Mark</div>
+      </div>
+      <div class="header-time" id="headerTime">--:--<sup>--</sup></div>
+    </div>
+  </div>
+  <div class="page">
+    <!-- WEATHER -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title" id="weatherLocation">Weather · Detecting...</span>
+        <button class="card-action" onclick="refreshWeather()">↻</button>
+      </div>
+      <div class="card-body" id="weatherBody"><div class="loading-msg">📡 Fetching weather...</div></div>
+    </div>
+    <!-- DATES -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Upcoming</span>
+        <button class="card-action" onclick="openDateModal()">+</button>
+      </div>
+      <div class="card-body" id="datesBody"><div class="loading-msg">Loading...</div></div>
+    </div>
+    <!-- ROUTINE -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Routine</span>
+        <button class="card-action" onclick="openHabitModal()">+</button>
+      </div>
+      <div class="card-body">
+        <div class="routine-tabs">
+          <button class="routine-tab active" id="tab-morning" onclick="switchRoutine('morning')">Morning</button>
+          <button class="routine-tab" id="tab-evening" onclick="switchRoutine('evening')">Evening</button>
+        </div>
+        <div id="routineBody"><div class="loading-msg">Loading...</div></div>
+      </div>
+    </div>
+    <!-- CATHOLIC -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Catholic Daily</span>
+      </div>
+      <div class="card-body" id="catholicBody"><div class="loading-msg">Loading...</div></div>
+    </div>
+    <!-- CALENDAR -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Calendar</span>
+        <button class="card-action" onclick="showToast('Full calendar coming soon')">›</button>
+      </div>
+      <div class="card-body">
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="changeCalDay(-1)">‹</button>
+          <div class="cal-nav-date" id="calNavDate">Today</div>
+          <button class="cal-nav-btn" onclick="changeCalDay(1)">›</button>
+        </div>
+        <div class="cal-empty">Connect Google Calendar to see your events.</div>
+        <button class="cal-connect-btn" onclick="showToast('Google Calendar setup coming in next update')">📅 Connect Google Calendar</button>
+      </div>
+    </div>
+    <!-- TASKS (landing) -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Urgent &amp; Priority Tasks</span>
+        <button class="card-action" onclick="showScreen('tasks')">›</button>
+      </div>
+      <div class="card-body" id="lpTasksBody"><div class="loading-msg">Loading...</div></div>
+    </div>
+    <!-- MARKETS -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Markets</span>
+        <button class="card-action" onclick="openWatchlistModal()">+</button>
+      </div>
+      <div class="card-body" id="marketsBody"><div class="loading-msg">📈 Fetching...</div></div>
+    </div>
+  </div>
+  <button class="hunting-btn" onclick="showToast('Hunting & Fishing Forecast coming soon')">
+    <div class="hunting-icon">🦌🎣</div>
+    <div class="hunting-text">
+      <div class="hunting-title">Hunting &amp; Fishing Forecast</div>
+      <div class="hunting-sub">Tap to view today's forecast</div>
+    </div>
+    <div class="hunting-arrow">›</div>
+  </button>
+  <div class="scripture">"Whatever you do, work at it with all your heart." — Col 3:23</div>
+</div>
+
+<!-- ══ SCREEN: TASK MANAGER ══════════════════════════════════════════════ -->
+<div id="screen-tasks" class="screen">
+  <div class="subheader">
+    <button class="back-btn" onclick="showScreen('landing')">‹</button>
+    <span class="subheader-title">Task Manager</span>
+    <button class="subheader-action" onclick="openAddProjectModal()">+</button>
+  </div>
+  <div class="list-tabs">
+    <button class="list-tab active" id="ltab-job" onclick="switchList('job')">💼 Job</button>
+    <button class="list-tab" id="ltab-biz" onclick="switchList('biz')">🏢 Business</button>
+    <button class="list-tab" id="ltab-home" onclick="switchList('home')">🏠 Home</button>
+    <button class="list-tab" id="ltab-camp" onclick="switchList('camp')">🚐 Camper</button>
+    <button class="list-tab" id="ltab-archive" onclick="switchList('archive')">📦 Archive</button>
+  </div>
+  <div class="tm-toolbar">
+    <button class="filter-btn active" id="filter-all" onclick="setFilter('all')">All</button>
+    <button class="filter-btn" id="filter-urgent" onclick="setFilter('urgent')">🔴 Urgent</button>
+    <button class="filter-btn" id="filter-priority" onclick="setFilter('priority')">⭐ Priority</button>
+  </div>
+  <div id="tmBody"></div>
+  <button class="add-project-fab" onclick="openAddProjectModal()">+</button>
+</div>
+
+<!-- ══ SCREEN: PROJECT DETAIL ════════════════════════════════════════════ -->
+<div id="screen-project" class="screen">
+  <div class="subheader">
+    <button class="back-btn" id="projectBackBtn" onclick="showScreen('tasks')">‹</button>
+    <span class="subheader-title" id="projectDetailTitle">Project</span>
+  </div>
+  <div class="project-detail-meta" id="projectDetailMeta"></div>
+  <div class="subtasks-section">
+    <div class="subtasks-title">
+      <span>Subtasks</span>
+      <span id="subtaskProgress" style="color:var(--muted);font-size:12px;font-weight:500"></span>
+    </div>
+    <div id="subtasksList"></div>
+    <div class="add-subtask-row">
+      <input class="add-subtask-input" id="newSubtaskInput" placeholder="Add subtask..." onkeydown="if(event.key==='Enter')addSubtask()">
+      <button class="add-subtask-btn" onclick="addSubtask()">Add</button>
+    </div>
+  </div>
+  <div class="detail-actions">
+    <button class="btn-save" onclick="saveProjectDetail()">Save Changes</button>
+    <button class="btn-archive" onclick="archiveProject()">Archive</button>
+    <button class="btn-delete" onclick="deleteProject()">Delete</button>
+  </div>
+</div>
+
+<!-- ── MODALS ── -->
+<!-- Date modal -->
+<div class="modal-overlay" id="dateModal" style="display:none">
+  <div class="modal">
+    <h3>Add Important Date</h3>
+    <label class="modal-label">Label</label>
+    <input type="text" id="dateLabel" placeholder="e.g. Wedding Anniversary 💍">
+    <label class="modal-label">Date</label>
+    <input type="date" id="dateValue">
+    <label class="modal-label">Recurring</label>
+    <select id="dateRecur">
+      <option value="none">One time only</option>
+      <option value="weekly">Weekly</option>
+      <option value="monthly">Monthly</option>
+      <option value="yearly">Yearly</option>
+    </select>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeDateModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveDate()">Save</button>
+    </div>
+  </div>
+</div>
+<!-- Habit modal -->
+<div class="modal-overlay" id="habitModal" style="display:none">
+  <div class="modal">
+    <h3>Add Habit</h3>
+    <label class="modal-label">Habit name</label>
+    <input type="text" id="habitName" placeholder="e.g. Prayer & Bible">
+    <label class="modal-label">Session</label>
+    <select id="habitSession"><option value="morning">Morning</option><option value="evening">Evening</option></select>
+    <label class="modal-label">Type</label>
+    <select id="habitType" onchange="toggleGoalField()"><option value="daily">Daily (streak tracker)</option><option value="weekly">Weekly goal</option></select>
+    <div id="goalField" style="display:none">
+      <label class="modal-label">Times per week</label>
+      <input type="number" id="habitGoal" placeholder="e.g. 4" min="1" max="7">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeHabitModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveHabit()">Save</button>
+    </div>
+  </div>
+</div>
+<!-- Add project modal -->
+<div class="modal-overlay" id="addProjectModal" style="display:none">
+  <div class="modal">
+    <h3>New Project</h3>
+    <label class="modal-label">Project name</label>
+    <input type="text" id="newProjectName" placeholder="e.g. Bathroom Remodel">
+    <label class="modal-label">Notes (optional)</label>
+    <textarea id="newProjectNotes" placeholder="Any details..."></textarea>
+    <label class="modal-label">Flag</label>
+    <div class="modal-flag-row">
+      <button class="flag-chip" id="newFlagUrgent" onclick="toggleNewFlag('urgent')">🔴 Urgent</button>
+      <button class="flag-chip" id="newFlagPriority" onclick="toggleNewFlag('priority')">⭐ Priority</button>
+      <button class="flag-chip" id="newFlagNone" onclick="toggleNewFlag('none')" style="border-color:var(--gold);color:var(--gold)">None</button>
+    </div>
+    <label class="modal-label">Due date (optional)</label>
+    <input type="date" id="newProjectDue">
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeAddProjectModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveNewProject()">Add Project</button>
+    </div>
+  </div>
+</div>
+<!-- Watchlist modal -->
+<div class="modal-overlay" id="watchlistModal" style="display:none">
+  <div class="modal">
+    <h3>Manage Watchlist</h3>
+    <label class="modal-label">Ticker symbol</label>
+    <input type="text" id="newTicker" placeholder="e.g. AAPL, VOO, NVDA" style="text-transform:uppercase">
+    <label class="modal-label">Display name</label>
+    <input type="text" id="newTickerName" placeholder="e.g. Apple Inc">
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeWatchlistModal()">Done</button>
+      <button class="btn-primary" onclick="addTicker()">Add</button>
+    </div>
+    <div id="currentWatchlist" style="margin-top:16px"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" style="display:none;position:fixed;inset:0;background:linear-gradient(160deg,#1A2035 0%,#2C3A5C 100%);z-index:500;flex-direction:column;align-items:center;justify-content:center;padding:40px;">
+  <div style="font-size:48px;margin-bottom:16px">✝</div>
+  <div style="font-size:24px;font-weight:700;color:#fff;margin-bottom:8px">Daily Dashboard</div>
+  <div style="font-size:14px;color:#C9A84C;margin-bottom:48px;font-style:italic">Whatever you do, work at it with all your heart.</div>
+  <button onclick="signInWithGoogle()" style="display:flex;align-items:center;gap:12px;background:#fff;border:none;border-radius:12px;padding:14px 24px;font-size:16px;font-weight:600;color:#1A2035;cursor:pointer;box-shadow:0 4px 12px #00000030;">
+    <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+    Sign in with Google
+  </button>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+const firebaseConfig = {
+  apiKey:"AIzaSyCS9kGc8RllKG-qpcMGfBLWxle_FmUJb1k",
+  authDomain:"daily-dashboard-58434.firebaseapp.com",
+  projectId:"daily-dashboard-58434",
+  storageBucket:"daily-dashboard-58434.firebasestorage.app",
+  messagingSenderId:"487255954196",
+  appId:"1:487255954196:web:d6e1a08c75b9e96b68a801"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+const USER = 'mark';
+const FINNHUB = 'd9ht3q9r01qjmfdadou0d9ht3q9r01qjmfdadoug';
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+let state = {
+  dates:[],
+  habits:[
+    {id:'h1',name:'Prayer & Bible (5:05 AM)',session:'morning',type:'daily',streak:0,bestStreak:0,lastDone:''},
+    {id:'h2',name:'16 oz Water on Wake',session:'morning',type:'daily',streak:0,bestStreak:0,lastDone:''},
+    {id:'h3',name:'Workout (5:55 AM)',session:'morning',type:'weekly',weeklyGoal:4,weeklyDone:[],weekStreak:0},
+    {id:'h4',name:'Keto Meal (under 30g carbs)',session:'morning',type:'daily',streak:0,bestStreak:0,lastDone:''},
+    {id:'h5',name:'Phone down at 9:00 PM',session:'evening',type:'daily',streak:0,bestStreak:0,lastDone:''},
+    {id:'h6',name:'Time with wife (9:15 PM)',session:'evening',type:'daily',streak:0,bestStreak:0,lastDone:''},
+    {id:'h7',name:'Lights out by 9:30 PM',session:'evening',type:'daily',streak:0,bestStreak:0,lastDone:''},
+  ],
+  projects:{ job:[], biz:[], home:[], camp:[], archive:[] },
+  watchlist:[
+    {ticker:'FXAIX',name:'Fidelity S&P 500'},
+    {ticker:'VOO',name:'Vanguard S&P 500'},
+    {ticker:'VTI',name:'Vanguard Total Mkt'},
+    {ticker:'NVDA',name:'NVIDIA Corp'},
+  ],
+  routineSession: new Date().getHours()<17?'morning':'evening',
+  currentList:'job',
+  currentFilter:'all',
+  currentProjectId:null,
+  calOffset:0
+};
+
+const todayStr=()=>new Date().toISOString().slice(0,10);
+
+// ── FIREBASE ───────────────────────────────────────────────────────────────
+async function loadFromFirebase(){
+  // auth check happens in onAuthStateChanged, this just loads data
+  try{
+    const snap=await getDoc(doc(db,'users',USER));
+    if(snap.exists()){
+      const d=snap.data();
+      if(d.dates) state.dates=d.dates;
+      if(d.habits) state.habits=d.habits;
+      if(d.projects) state.projects=d.projects;
+      if(d.watchlist) state.watchlist=d.watchlist;
+      if(!state.projects.archive) state.projects.archive=[];
+    }
+  }catch(e){console.log('Load:',e);}
+}
+async function save(){
+  try{
+    await setDoc(doc(db,'users',USER),{
+      dates:state.dates,habits:state.habits,
+      projects:state.projects,watchlist:state.watchlist,
+      updatedAt:new Date().toISOString()
+    });
+  }catch(e){console.log('Save:',e);}
+}
+
+// ── NAVIGATION ─────────────────────────────────────────────────────────────
+window.showScreen=function(name, fromLanding){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  window.scrollTo(0,0);
+  if(name==='tasks') renderTM();
+  if(name==='landing') renderLPTasks();
+}
+
+// ── CLOCK ──────────────────────────────────────────────────────────────────
+function updateClock(){
+  const now=new Date();
+  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('headerDate').textContent=`${days[now.getDay()]} · ${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+  let h=now.getHours(),m=now.getMinutes(),ampm=h>=12?'PM':'AM';h=h%12||12;
+  document.getElementById('headerTime').innerHTML=`${h}:${String(m).padStart(2,'0')}<sup>${ampm}</sup>`;
+  const hour=now.getHours();
+  document.getElementById('headerGreeting').textContent=`${hour<12?'Good morning':hour<17?'Good afternoon':'Good evening'}, Mark`;
+}
+
+// ── WEATHER ────────────────────────────────────────────────────────────────
+const WMO={0:'Clear ☀️',1:'Mainly clear 🌤',2:'Partly cloudy ⛅',3:'Overcast ☁️',45:'Foggy 🌫',51:'Light drizzle 🌦',53:'Drizzle 🌦',61:'Light rain 🌧',63:'Rain 🌧',65:'Heavy rain 🌧',71:'Light snow 🌨',73:'Snow 🌨',75:'Heavy snow ❄️',80:'Rain showers 🌦',95:'Thunderstorm ⛈'};
+const WDIR=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+function windDir(d){return WDIR[Math.round(d/22.5)%16];}
+function moonPhase(){const phases=['🌑 New Moon','🌒 Waxing Crescent','🌓 First Quarter','🌔 Waxing Gibbous','🌕 Full Moon','🌖 Waning Gibbous','🌗 Last Quarter','🌘 Waning Crescent'];const known=new Date('2000-01-06');const diff=(new Date()-known)/(1000*60*60*24);return phases[Math.floor((diff%29.53)/29.53*8)];}
+window.refreshWeather=async function(){
+  document.getElementById('weatherBody').innerHTML='<div class="loading-msg">📡 Fetching weather...</div>';
+  try{
+    let lat=37.7789,lon=-97.5311,locName='Colwich, KS';
+    try{const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{timeout:5000}));lat=pos.coords.latitude;lon=pos.coords.longitude;const geo=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);const gd=await geo.json();locName=gd.address?.city||gd.address?.town||gd.address?.village||locName;}catch(e){}
+    document.getElementById('weatherLocation').textContent=`Weather · ${locName}`;
+    const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation_probability,weather_code,wind_speed_10m,wind_direction_10m&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=auto&forecast_days=1`);
+    const d=await r.json();const c=d.current;const day=d.daily;
+    const desc=WMO[c.weather_code]||'Unknown';const icon=desc.split(' ').pop();
+    const sr=new Date(day.sunrise[0]).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+    const ss=new Date(day.sunset[0]).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+    const sunriseD=new Date(day.sunrise[0]),sunsetD=new Date(day.sunset[0]);
+    const dlh=Math.floor((sunsetD-sunriseD)/3600000),dlm=Math.round(((sunsetD-sunriseD)/3600000-dlh)*60);
+    document.getElementById('weatherBody').innerHTML=`
+      <div class="weather-main"><div><div class="weather-temp">${Math.round(c.temperature_2m)}<sup>°</sup></div><div class="weather-desc">${desc.replace(icon,'').trim()} · Feels like ${Math.round(c.apparent_temperature)}°</div></div><div class="weather-icon">${icon}</div></div>
+      <div class="weather-pills"><div class="pill"><strong>High</strong> ${Math.round(day.temperature_2m_max[0])}°</div><div class="pill"><strong>Low</strong> ${Math.round(day.temperature_2m_min[0])}°</div><div class="pill"><strong>Wind</strong> ${windDir(c.wind_direction_10m)} ${Math.round(c.wind_speed_10m)} mph</div><div class="pill"><strong>Humidity</strong> ${c.relative_humidity_2m}%</div><div class="pill"><strong>Precip</strong> ${c.precipitation_probability}%</div><div class="moon-pill">${moonPhase()}</div></div>
+      <div class="weather-sun"><span>🌅 <strong>${sr}</strong> Sunrise</span><span>🌇 <strong>${ss}</strong> Sunset</span><span>☀️ <strong>${dlh}h ${dlm}m</strong> daylight</span></div>`;
+  }catch(e){document.getElementById('weatherBody').innerHTML='<div class="loading-msg">⚠️ Weather unavailable.</div>';}
+}
+
+// ── DATES ──────────────────────────────────────────────────────────────────
+function getNextOccurrence(dateStr,recur){
+  const now=new Date();now.setHours(0,0,0,0);let d=new Date(dateStr+'T00:00:00');
+  if(!recur||recur==='none')return d;
+  while(d<now){if(recur==='weekly')d.setDate(d.getDate()+7);else if(recur==='monthly')d.setMonth(d.getMonth()+1);else if(recur==='yearly')d.setFullYear(d.getFullYear()+1);else break;}
+  return d;
+}
+function renderDates(){
+  const now=new Date();now.setHours(0,0,0,0);
+  const recurLabels={none:'',weekly:'↻ Weekly',monthly:'↻ Monthly',yearly:'↻ Yearly'};
+  const sorted=state.dates.map(d=>{const next=getNextOccurrence(d.date,d.recur);const diff=Math.ceil((next-now)/86400000);return{...d,diff,next};}).filter(d=>d.diff>=0).sort((a,b)=>a.diff-b.diff).slice(0,5);
+  let html=sorted.length?sorted.map(d=>`<div class="date-item"><div class="date-badge"><div class="days">${d.diff}</div><div class="dlabel">${d.diff===1?'day':'days'}</div></div><div class="date-info"><div class="date-name">${d.label}</div><div class="date-when">${d.next.toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'})}</div>${d.recur&&d.recur!=='none'?`<div class="date-recur">${recurLabels[d.recur]}</div>`:''}</div><button onclick="deleteDate('${d.id}')" style="background:none;border:none;color:#ddd;font-size:20px;cursor:pointer;flex-shrink:0;padding:0 4px">×</button></div>`).join(''):'<div class="loading-msg">No upcoming dates. Tap + to add.</div>';
+  document.getElementById('datesBody').innerHTML=html+`<button class="add-dashed-btn" onclick="openDateModal()">+ Add date</button>`;
+}
+window.deleteDate=async function(id){
+  state.dates=state.dates.filter(d=>d.id!==id);
+  renderDates();await save();showToast('Date removed');
+}
+window.openDateModal=function(){document.getElementById('dateModal').style.display='flex';}
+window.closeDateModal=function(){document.getElementById('dateModal').style.display='none';document.getElementById('dateLabel').value='';document.getElementById('dateValue').value='';document.getElementById('dateRecur').value='none';}
+window.saveDate=async function(){
+  const label=document.getElementById('dateLabel').value.trim(),date=document.getElementById('dateValue').value,recur=document.getElementById('dateRecur').value;
+  if(!label||!date){showToast('Please fill in both fields');return;}
+  state.dates.push({id:Date.now().toString(),label,date,recur});
+  closeDateModal();renderDates();await save();showToast('Date saved ✓');
+}
+
+// ── ROUTINE ────────────────────────────────────────────────────────────────
+window.switchRoutine=function(session){state.routineSession=session;document.querySelectorAll('.routine-tab').forEach(t=>t.classList.remove('active'));document.getElementById('tab-'+session).classList.add('active');renderRoutine();}
+window.toggleGoalField=function(){document.getElementById('goalField').style.display=document.getElementById('habitType').value==='weekly'?'block':'none';}
+function renderRoutine(){
+  const today=todayStr();const now=new Date();
+  const habits=state.habits.filter(h=>h.session===state.routineSession);
+  if(!habits.length){document.getElementById('routineBody').innerHTML='<div class="loading-msg">No habits yet.</div>';return;}
+  document.getElementById('routineBody').innerHTML=habits.map(h=>{
+    const editBtns=`<div style="display:flex;gap:6px;flex-shrink:0;margin-top:2px">
+      <button onclick="editHabit('${h.id}')" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;color:var(--slate);cursor:pointer">Edit</button>
+      <button onclick="deleteHabit('${h.id}')" style="background:#FEE2E2;border:none;border-radius:6px;padding:3px 8px;font-size:11px;color:var(--red);cursor:pointer">✕</button>
+    </div>`;
+    if(h.type==='daily'){
+      const done=h.lastDone===today;const streak=h.streak||0;const best=h.bestStreak||0;
+      return `<div class="habit-row"><div class="habit-check ${done?'done':''}" onclick="toggleHabit('${h.id}')">${done?'✓':''}</div><div class="habit-info"><div class="habit-name ${done?'done':''}">${h.name}</div><div class="habit-meta">Daily habit</div><div class="streak-row">${streak>0?`<div class="streak-badge">🔥 ${streak} day streak</div>`:'<div class="streak-badge" style="background:#eee;color:#999">No streak yet</div>'}${best>0?`<div class="best-badge">Best: ${best}</div>`:''}</div></div>${editBtns}</div>`;
+    }else{
+      const goal=h.weeklyGoal||4;const weeklyDone=h.weeklyDone||[];
+      const ws=new Date(now);ws.setDate(now.getDate()-now.getDay());ws.setHours(0,0,0,0);
+      const doneThisWeek=weeklyDone.filter(d=>{const dd=new Date(d+'T00:00:00');return dd>=ws;}).length;
+      const isToday=weeklyDone.includes(today);const wstreak=h.weekStreak||0;
+      const dots=Array.from({length:goal},(_,i)=>`<div class="dot ${i<doneThisWeek?'filled':''}"></div>`).join('');
+      return `<div class="habit-row"><div class="habit-check ${isToday?'done':''}" onclick="toggleHabit('${h.id}')">${isToday?'✓':''}</div><div class="habit-info"><div class="habit-name ${isToday?'done':''}">${h.name}</div><div class="habit-meta">Goal: ${goal}× per week</div><div class="weekly-bar"><div class="weekly-dots">${dots}</div><div class="weekly-label">${doneThisWeek}/${goal} this week</div></div>${wstreak>0?`<div class="streak-row"><div class="streak-badge">🏆 ${wstreak} week streak</div></div>`:''}</div>${editBtns}</div>`;
+    }
+  }).join('');
+}
+window.deleteHabit=async function(id){
+  if(!confirm('Delete this habit? Your streak data will be lost.'))return;
+  state.habits=state.habits.filter(h=>h.id!==id);
+  renderRoutine();await save();showToast('Habit deleted');
+}
+window.editHabit=function(id){
+  const h=state.habits.find(h=>h.id===id);if(!h)return;
+  state.editingHabitId=id;
+  document.getElementById('habitName').value=h.name;
+  document.getElementById('habitSession').value=h.session;
+  document.getElementById('habitType').value=h.type;
+  if(h.type==='weekly'){
+    document.getElementById('goalField').style.display='block';
+    document.getElementById('habitGoal').value=h.weeklyGoal||4;
+  }else{
+    document.getElementById('goalField').style.display='none';
+  }
+  document.querySelector('#habitModal h3').textContent='Edit Habit';
+  document.getElementById('habitModal').style.display='flex';
+}
+window.toggleHabit=async function(id){
+  const today=todayStr();const now=new Date();
+  const h=state.habits.find(h=>h.id===id);if(!h)return;
+  if(h.type==='daily'){
+    if(h.lastDone===today){h.lastDone='';h.streak=Math.max(0,(h.streak||0)-1);}
+    else{const yest=new Date();yest.setDate(yest.getDate()-1);const ys=yest.toISOString().slice(0,10);h.streak=(h.lastDone===ys)?(h.streak||0)+1:1;h.bestStreak=Math.max(h.bestStreak||0,h.streak);h.lastDone=today;}
+  }else{
+    h.weeklyDone=h.weeklyDone||[];
+    if(h.weeklyDone.includes(today)){h.weeklyDone=h.weeklyDone.filter(d=>d!==today);}
+    else{h.weeklyDone.push(today);const ws=new Date(now);ws.setDate(now.getDate()-now.getDay());ws.setHours(0,0,0,0);const dtw=h.weeklyDone.filter(d=>{const dd=new Date(d+'T00:00:00');return dd>=ws;}).length;if(dtw>=h.weeklyGoal)h.weekStreak=(h.weekStreak||0)+1;}
+  }
+  renderRoutine();await save();
+}
+window.openHabitModal=function(){state.editingHabitId=null;document.querySelector('#habitModal h3').textContent='Add Habit';document.getElementById('habitModal').style.display='flex';}
+window.closeHabitModal=function(){document.getElementById('habitModal').style.display='none';document.getElementById('habitName').value='';document.getElementById('goalField').style.display='none';document.getElementById('habitType').value='daily';state.editingHabitId=null;document.querySelector('#habitModal h3').textContent='Add Habit';}
+window.saveHabit=async function(){
+  const name=document.getElementById('habitName').value.trim(),session=document.getElementById('habitSession').value,type=document.getElementById('habitType').value,goal=parseInt(document.getElementById('habitGoal').value)||4;
+  if(!name){showToast('Enter a habit name');return;}
+  if(state.editingHabitId){
+    // Edit existing
+    const h=state.habits.find(h=>h.id===state.editingHabitId);
+    if(h){
+      h.name=name;h.session=session;
+      if(type!==h.type){
+        h.type=type;
+        if(type==='daily'){h.streak=0;h.bestStreak=0;h.lastDone='';}
+        else{h.weeklyGoal=goal;h.weeklyDone=[];h.weekStreak=0;}
+      } else if(type==='weekly'){h.weeklyGoal=goal;}
+    }
+    closeHabitModal();renderRoutine();await save();showToast('Habit updated ✓');
+  } else {
+    // Add new
+    const h={id:Date.now().toString(),name,session,type};
+    if(type==='daily'){h.streak=0;h.bestStreak=0;h.lastDone='';}else{h.weeklyGoal=goal;h.weeklyDone=[];h.weekStreak=0;}
+    state.habits.push(h);closeHabitModal();renderRoutine();await save();showToast('Habit added ✓');
+  }
+}
+
+// ── CATHOLIC ───────────────────────────────────────────────────────────────
+function getEaster(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;return new Date(y,mo-1,day);}
+function getAdvent(y){const xmas=new Date(y,11,25);const dow=xmas.getDay();return new Date(y,11,25-(dow===0?28:dow+21));}
+window.openReadings=function(){window.open('https://bible.usccb.org/daily-bible-reading','_blank');}
+function renderCatholic(){
+  const now=new Date();const today=new Date(now);today.setHours(0,0,0,0);const y=now.getFullYear();
+  const easter=getEaster(y);const ashWed=new Date(easter);ashWed.setDate(ashWed.getDate()-46);
+  const pentecost=new Date(easter);pentecost.setDate(pentecost.getDate()+49);
+  const advent=getAdvent(y);const christmas=new Date(y,11,25);
+  let season='Ordinary Time',seasonColor='#006400',countdown='';
+  if(today>=advent){season='Advent';seasonColor='#6A0DAD';countdown=`${Math.ceil((christmas-today)/86400000)} days until Christmas`;}
+  else if(today>=pentecost){season='Ordinary Time';seasonColor='#006400';countdown=`${Math.ceil((advent-today)/86400000)} days until Advent`;}
+  else if(today>=easter){season='Easter Time';seasonColor='#FFD700';countdown=`${Math.ceil((pentecost-today)/86400000)} days until Pentecost`;}
+  else if(today>=ashWed){season='Lent';seasonColor='#6A0DAD';countdown=`${Math.ceil((easter-today)/86400000)} days until Easter`;}
+  else{countdown=`${Math.ceil((advent-today)/86400000)} days until Advent`;}
+  document.getElementById('catholicBody').innerHTML=`<div class="catholic-season"><div class="season-dot" style="background:${seasonColor}"></div><div class="season-text">${season}</div></div><div class="catholic-countdown">☩ ${countdown}</div><button class="readings-btn" onclick="openReadings()">📖 Today's Mass Readings</button>`;
+}
+
+// ── CALENDAR ───────────────────────────────────────────────────────────────
+window.changeCalDay=function(dir){
+  state.calOffset+=dir;const d=new Date();d.setDate(d.getDate()+state.calOffset);
+  const label=state.calOffset===0?'Today':state.calOffset===1?'Tomorrow':state.calOffset===-1?'Yesterday':d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
+  document.getElementById('calNavDate').textContent=label;
+}
+
+// ── TASK MANAGER ───────────────────────────────────────────────────────────
+const LIST_META={job:{label:'💼 Job',cls:'tag-job',tag:'JOB'},biz:{label:'🏢 Personal Business',cls:'tag-biz',tag:'BIZ'},home:{label:'🏠 Home',cls:'tag-home',tag:'HOME'},camp:{label:'🚐 Camper',cls:'tag-camp',tag:'CAMP'},archive:{label:'📦 Archive',cls:'',tag:''}};
+
+window.switchList=function(list){
+  state.currentList=list;state.currentFilter='all';
+  document.querySelectorAll('.list-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('ltab-'+list).classList.add('active');
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('filter-all').classList.add('active');
+  document.querySelector('.tm-toolbar').style.display=list==='archive'?'none':'flex';
+  document.querySelector('.add-project-fab').style.display=list==='archive'?'none':'flex';
+  renderTM();
+}
+window.setFilter=function(f){
+  state.currentFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('filter-'+f).classList.add('active');
+  renderTM();
+}
+function renderTM(){
+  const list=state.currentList;
+  let projects=(state.projects[list]||[]);
+  if(list!=='archive'){
+    if(state.currentFilter==='urgent') projects=projects.filter(p=>p.flag==='urgent');
+    else if(state.currentFilter==='priority') projects=projects.filter(p=>p.flag==='priority');
+  }
+  if(!projects.length){
+    document.getElementById('tmBody').innerHTML=`<div class="no-projects">${list==='archive'?'No archived projects.':'No projects yet. Tap + to add one.'}</div>`;
+    return;
+  }
+  document.getElementById('tmBody').innerHTML=projects.map(p=>{
+    const subtasks=p.subtasks||[];const done=subtasks.filter(s=>s.done).length;const total=subtasks.length;
+    const pct=total?Math.round(done/total*100):0;
+    const flagIcon=p.flag==='urgent'?'🔴':p.flag==='priority'?'⭐':'';
+    const dueStr=p.due?formatDue(p.due):'';
+    const isOverdue=p.due&&new Date(p.due+'T00:00:00')<new Date()&&!p.done;
+    return `<div class="project-card ${p.flag==='urgent'?'urgent-card':''}" onclick="openProject('${p.id}','${list}')">
+      <div class="project-header">
+        <div class="project-check ${p.done?'done':''} ${p.flag==='urgent'&&!p.done?'urgent':''}" onclick="event.stopPropagation();toggleProjectDone('${p.id}','${list}')">${p.done?'✓':''}</div>
+        <div class="project-info">
+          <div class="project-name ${p.done?'done':''}">${p.name}</div>
+          <div class="project-meta">${flagIcon?`<span class="project-flag">${flagIcon}</span>`:''}${dueStr?`<span class="project-due ${isOverdue?'overdue':''}">${isOverdue?'⚠️ ':''} ${dueStr}</span>`:''}</div>
+        </div>
+        <div class="project-arrow">›</div>
+      </div>
+      ${total>0?`<div class="project-progress"><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><div class="progress-label">${done}/${total} subtasks complete</div></div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function formatDue(dateStr){
+  const d=new Date(dateStr+'T00:00:00');const now=new Date();now.setHours(0,0,0,0);
+  const diff=Math.ceil((d-now)/86400000);
+  if(diff===0)return 'Due today';if(diff===1)return 'Due tomorrow';if(diff<0)return `${Math.abs(diff)}d overdue`;
+  return `Due ${d.toLocaleDateString([],{month:'short',day:'numeric'})}`;
+}
+
+window.toggleProjectDone=async function(id,list){
+  const p=(state.projects[list]||[]).find(p=>p.id===id);if(!p)return;
+  p.done=!p.done;
+  if(p.done){showToast('Project complete! Archive when ready.');}
+  renderTM();renderLPTasks();await save();
+}
+
+// Open project detail
+window.openProject=function(id,list){
+  const allProjects=[...Object.entries(state.projects).flatMap(([l,ps])=>ps.map(p=>({...p,list:l})))];
+  const p=allProjects.find(p=>p.id===id);if(!p)return;
+  state.currentProjectId=id;state.currentProjectList=list||p.list;
+  document.getElementById('projectDetailTitle').textContent=p.name;
+  renderProjectDetail(p);
+  showScreen('project');
+}
+
+function renderProjectDetail(p){
+  const urgentActive=p.flag==='urgent';const priorityActive=p.flag==='priority';
+  document.getElementById('projectDetailMeta').innerHTML=`
+    <div style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:12px">${p.name}</div>
+    <div class="detail-flag-row">
+      <button class="flag-chip ${urgentActive?'urgent-active':''}" id="detailFlagUrgent" onclick="toggleDetailFlag('urgent')">🔴 Urgent</button>
+      <button class="flag-chip ${priorityActive?'priority-active':''}" id="detailFlagPriority" onclick="toggleDetailFlag('priority')">⭐ Priority</button>
+      <button class="flag-chip ${!urgentActive&&!priorityActive?'priority-active':''}" id="detailFlagNone" onclick="toggleDetailFlag('none')" style="${!urgentActive&&!priorityActive?'border-color:var(--slate);color:var(--slate);background:#eee':''}">None</button>
+    </div>
+    <textarea class="detail-notes" id="detailNotes" placeholder="Notes...">${p.notes||''}</textarea>
+    <div class="detail-due">
+      <label>Due date:</label>
+      <input type="date" id="detailDue" value="${p.due||''}">
+      ${p.due?`<button onclick="clearDue()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px">Clear</button>`:''}
+    </div>`;
+  renderSubtasks(p);
+}
+
+function renderSubtasks(p){
+  const subtasks=p.subtasks||[];const done=subtasks.filter(s=>s.done).length;
+  document.getElementById('subtaskProgress').textContent=subtasks.length?`${done}/${subtasks.length} complete`:'';
+  document.getElementById('subtasksList').innerHTML=subtasks.map(s=>`
+    <div class="subtask-row">
+      <div class="subtask-check ${s.done?'done':''} ${s.flag==='urgent'&&!s.done?'urgent':''}" onclick="toggleSubtask('${p.id}','${s.id}')">${s.done?'✓':''}</div>
+      <div class="subtask-info">
+        <div class="subtask-name ${s.done?'done':''}">${s.name}</div>
+        ${s.due?`<div class="subtask-due">${formatDue(s.due)}</div>`:''}
+        <div class="subtask-flags">
+          <button class="subtask-flag-btn ${s.flag==='urgent'?'urgent-active':''}" onclick="toggleSubtaskFlag('${p.id}','${s.id}','urgent')">🔴</button>
+          <button class="subtask-flag-btn ${s.flag==='priority'?'priority-active':''}" onclick="toggleSubtaskFlag('${p.id}','${s.id}','priority')">⭐</button>
+        </div>
+      </div>
+      <button class="subtask-delete" onclick="deleteSubtask('${p.id}','${s.id}')">×</button>
+    </div>`).join('');
+}
+
+function getCurrentProject(){
+  const list=state.currentProjectList;
+  return (state.projects[list]||[]).find(p=>p.id===state.currentProjectId);
+}
+
+window.toggleDetailFlag=function(flag){
+  const p=getCurrentProject();if(!p)return;
+  p.flag=flag==='none'?'':flag;
+  const urg=p.flag==='urgent',pri=p.flag==='priority';
+  document.getElementById('detailFlagUrgent').className=`flag-chip ${urg?'urgent-active':''}`;
+  document.getElementById('detailFlagPriority').className=`flag-chip ${pri?'priority-active':''}`;
+  document.getElementById('detailFlagNone').className=`flag-chip`;
+  if(!urg&&!pri)document.getElementById('detailFlagNone').style.cssText='border-color:var(--slate);color:var(--slate);background:#eee';
+  else document.getElementById('detailFlagNone').style.cssText='';
+}
+window.clearDue=function(){document.getElementById('detailDue').value='';}
+
+window.toggleSubtask=async function(pid,sid){
+  const p=getCurrentProject();if(!p)return;
+  const s=(p.subtasks||[]).find(s=>s.id===sid);if(!s)return;
+  s.done=!s.done;renderSubtasks(p);await save();renderLPTasks();
+}
+window.toggleSubtaskFlag=async function(pid,sid,flag){
+  const p=getCurrentProject();if(!p)return;
+  const s=(p.subtasks||[]).find(s=>s.id===sid);if(!s)return;
+  s.flag=s.flag===flag?'':flag;renderSubtasks(p);await save();renderLPTasks();
+}
+window.deleteSubtask=async function(pid,sid){
+  const p=getCurrentProject();if(!p)return;
+  p.subtasks=(p.subtasks||[]).filter(s=>s.id!==sid);renderSubtasks(p);await save();
+}
+window.addSubtask=async function(){
+  const input=document.getElementById('newSubtaskInput');const name=input.value.trim();if(!name)return;
+  const p=getCurrentProject();if(!p)return;
+  if(!p.subtasks)p.subtasks=[];
+  p.subtasks.push({id:Date.now().toString(),name,done:false,flag:'',due:''});
+  input.value='';renderSubtasks(p);await save();
+}
+window.saveProjectDetail=async function(){
+  const p=getCurrentProject();if(!p)return;
+  p.notes=document.getElementById('detailNotes').value;
+  p.due=document.getElementById('detailDue').value;
+  await save();renderLPTasks();showToast('Saved ✓');
+}
+window.archiveProject=async function(){
+  const list=state.currentProjectList;
+  const idx=(state.projects[list]||[]).findIndex(p=>p.id===state.currentProjectId);
+  if(idx===-1)return;
+  const [p]=state.projects[list].splice(idx,1);
+  if(!state.projects.archive)state.projects.archive=[];
+  state.projects.archive.push({...p,archivedAt:new Date().toISOString()});
+  await save();showToast('Archived ✓');showScreen('tasks');
+}
+window.deleteProject=async function(){
+  if(!confirm('Delete this project permanently?'))return;
+  const list=state.currentProjectList;
+  state.projects[list]=(state.projects[list]||[]).filter(p=>p.id!==state.currentProjectId);
+  await save();renderLPTasks();showToast('Deleted');showScreen('tasks');
+}
+
+// Add project modal
+let newProjectFlag='';
+window.openAddProjectModal=function(){newProjectFlag='';document.getElementById('addProjectModal').style.display='flex';}
+window.closeAddProjectModal=function(){document.getElementById('addProjectModal').style.display='none';document.getElementById('newProjectName').value='';document.getElementById('newProjectNotes').value='';document.getElementById('newProjectDue').value='';newProjectFlag='';document.querySelectorAll('.flag-chip').forEach(c=>c.style.cssText='');}
+window.toggleNewFlag=function(flag){
+  newProjectFlag=flag==='none'?'':flag;
+  document.getElementById('newFlagUrgent').className=`flag-chip ${newProjectFlag==='urgent'?'urgent-active':''}`;
+  document.getElementById('newFlagPriority').className=`flag-chip ${newProjectFlag==='priority'?'priority-active':''}`;
+  document.getElementById('newFlagNone').className=`flag-chip`;
+  if(!newProjectFlag)document.getElementById('newFlagNone').style.cssText='border-color:var(--gold);color:var(--gold)';
+}
+window.saveNewProject=async function(){
+  const name=document.getElementById('newProjectName').value.trim();
+  if(!name){showToast('Enter a project name');return;}
+  const notes=document.getElementById('newProjectNotes').value.trim();
+  const due=document.getElementById('newProjectDue').value;
+  const list=state.currentList==='archive'?'job':state.currentList;
+  if(!state.projects[list])state.projects[list]=[];
+  state.projects[list].push({id:Date.now().toString(),name,notes,due,flag:newProjectFlag,done:false,subtasks:[]});
+  closeAddProjectModal();renderTM();renderLPTasks();await save();showToast('Project added ✓');
+}
+
+// ── LANDING PAGE TASKS ─────────────────────────────────────────────────────
+function renderLPTasks(){
+  const lists=['job','biz','home','camp'];
+  const tagMeta={job:{cls:'tag-job',tag:'JOB'},biz:{cls:'tag-biz',tag:'BIZ'},home:{cls:'tag-home',tag:'HOME'},camp:{cls:'tag-camp',tag:'CAMP'}};
+  let html='',hasAny=false;
+  lists.forEach(list=>{
+    const meta=tagMeta[list];
+    // Collect all projects that have a flag OR have flagged subtasks
+    const relevantProjects=(state.projects[list]||[]).filter(p=>{
+      if(p.done)return false;
+      if(p.flag==='urgent'||p.flag==='priority')return true;
+      return (p.subtasks||[]).some(s=>!s.done&&(s.flag==='urgent'||s.flag==='priority'));
+    });
+    if(!relevantProjects.length)return;
+    hasAny=true;
+    const label=list==='job'?'💼 Job':list==='biz'?'🏢 Personal Business':list==='home'?'🏠 Home':'🚐 Camper';
+    html+=`<div class="lp-section-label">${label}</div>`;
+    relevantProjects.forEach(p=>{
+      const subtasks=p.subtasks||[];
+      const allDone=subtasks.filter(s=>s.done).length;
+      const allTotal=subtasks.length;
+      const pct=allTotal?Math.round(allDone/allTotal*100):0;
+      const isProjectFlagged=p.flag==='urgent'||p.flag==='priority';
+      // Flagged subtasks to show nested
+      const flaggedSubs=subtasks.filter(s=>!s.done&&(s.flag==='urgent'||s.flag==='priority'));
+      // Project row — show flag only if project itself is flagged
+      html+=`<div class="lp-task-row" onclick="openProject('${p.id}','${list}')">
+        <div class="lp-task-left">
+          <div class="lp-task-name">${p.name}</div>
+          ${allTotal>0?`<div class="lp-task-progress">${allDone}/${allTotal} subtasks</div><div class="lp-progress-bar"><div class="lp-progress-fill" style="width:${pct}%"></div></div>`:''}
+        </div>
+        ${isProjectFlagged?`<div class="lp-task-flag">${p.flag==='urgent'?'🔴':'⭐'}</div>`:'<div style="width:22px"></div>'}
+        <div class="lp-task-tag ${meta.cls}">${meta.tag}</div>
+      </div>`;
+      // Nested flagged subtasks indented under project
+      if(flaggedSubs.length){
+        flaggedSubs.forEach(s=>{
+          html+=`<div class="lp-task-row" onclick="openProject('${p.id}','${list}')" style="margin-left:20px;margin-top:-4px;border-left:3px solid var(--border);border-radius:0 10px 10px 0;border-top-left-radius:0;border-bottom-left-radius:0;">
+            <div class="lp-task-left">
+              <div class="lp-task-name" style="font-size:13px;font-weight:500">↳ ${s.name}</div>
+            </div>
+            <div class="lp-task-flag">${s.flag==='urgent'?'🔴':'⭐'}</div>
+            <div style="width:30px"></div>
+          </div>`;
+        });
+      }
+    });
+  });
+  if(!hasAny)html='<div class="loading-msg">No urgent or priority tasks. Go to Task Manager to add projects.</div>';
+  html+=`<button class="add-dashed-btn" onclick="showScreen('tasks')" style="margin-top:8px">📋 Open Task Manager</button>`;
+  document.getElementById('lpTasksBody').innerHTML=html;
+}
+
+// ── MARKETS ────────────────────────────────────────────────────────────────
+async function fetchQuote(sym){try{const r=await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${FINNHUB}`);return await r.json();}catch(e){return null;}}
+window.refreshMarkets=async function(){
+  document.getElementById('marketsBody').innerHTML='<div class="loading-msg">📈 Fetching...</div>';
+  const indices=[{symbol:'DIA',name:'DOW',yahoo:'^DJI'},{symbol:'SPY',name:'S&P 500',yahoo:'^GSPC'},{symbol:'QQQ',name:'NASDAQ',yahoo:'^IXIC'}];
+  const indexData=await Promise.all(indices.map(i=>fetchQuote(i.symbol)));
+  const gridHtml=indices.map((idx,i)=>{const q=indexData[i];if(!q||!q.c)return `<div class="market-tile" onclick="window.open('https://finance.yahoo.com/quote/${encodeURIComponent(idx.yahoo)}','_blank')"><div class="market-name">${idx.name} ↗</div><div class="market-val">--</div></div>`;const price=q.c.toFixed(2);const chg=((q.c-q.pc)/q.pc*100).toFixed(2);const cls=chg>0?'up':'dn';return `<div class="market-tile" onclick="window.open('https://finance.yahoo.com/quote/${encodeURIComponent(idx.yahoo)}','_blank')"><div class="market-name">${idx.name} ↗</div><div class="market-val">${Number(price).toLocaleString()}</div><div class="market-chg ${cls}">${chg>0?'▲':'▼'} ${chg>0?'+':''}${chg}%</div></div>`;}).join('');
+  const watchData=await Promise.all(state.watchlist.map(s=>fetchQuote(s.ticker)));
+  const stockHtml=state.watchlist.map((s,i)=>{const q=watchData[i];if(!q||!q.c)return `<div class="stock-row" onclick="window.open('https://finance.yahoo.com/quote/${s.ticker}','_blank')"><div><div class="stock-ticker">${s.ticker} ↗</div><div class="stock-name">${s.name}</div></div><div class="stock-right"><div class="stock-price">--</div></div></div>`;const price=q.c.toFixed(2);const chg=((q.c-q.pc)/q.pc*100).toFixed(2);const cls=chg>0?'up':'dn';return `<div class="stock-row" onclick="window.open('https://finance.yahoo.com/quote/${s.ticker}','_blank')"><div><div class="stock-ticker">${s.ticker} ↗</div><div class="stock-name">${s.name}</div></div><div class="stock-right"><div class="stock-price">$${Number(price).toLocaleString()}</div><div class="market-chg ${cls}">${chg>0?'▲':'▼'} ${chg>0?'+':''}${chg}%</div></div></div>`;}).join('');
+  const now=new Date();
+  document.getElementById('marketsBody').innerHTML=`<div class="market-grid">${gridHtml}</div><div class="section-divider">My Watchlist <button style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:12px;font-weight:700" onclick="openWatchlistModal()">Edit</button></div>${stockHtml||'<div class="loading-msg">No stocks. Tap + to add.</div>'}<div class="market-updated">Updated ${now.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</div>`;
+}
+window.openWatchlistModal=function(){renderWatchlistModal();document.getElementById('watchlistModal').style.display='flex';}
+window.closeWatchlistModal=function(){document.getElementById('watchlistModal').style.display='none';refreshMarkets();}
+function renderWatchlistModal(){document.getElementById('currentWatchlist').innerHTML=state.watchlist.length?state.watchlist.map((s,i)=>`<div class="watchlist-item"><div><strong>${s.ticker}</strong> <span style="color:var(--muted);font-size:12px">${s.name}</span></div><button onclick="removeTicker(${i})" style="background:#FEE2E2;border:none;color:var(--red);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600">Remove</button></div>`).join(''):'<div style="color:var(--muted);font-size:13px;padding:8px 0">No stocks yet.</div>';}
+window.addTicker=async function(){const ticker=document.getElementById('newTicker').value.trim().toUpperCase(),name=document.getElementById('newTickerName').value.trim()||ticker;if(!ticker){showToast('Enter a ticker');return;}if(state.watchlist.find(s=>s.ticker===ticker)){showToast('Already in watchlist');return;}state.watchlist.push({ticker,name});document.getElementById('newTicker').value='';document.getElementById('newTickerName').value='';renderWatchlistModal();await save();showToast(`${ticker} added ✓`);}
+window.removeTicker=async function(i){state.watchlist.splice(i,1);renderWatchlistModal();await save();showToast('Removed ✓');}
+window.showToast=function(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+async function init(){
+  updateClock();setInterval(updateClock,1000);
+  onAuthStateChanged(auth, async (user) => {
+    if(user){
+      document.getElementById('loginScreen').style.display='none';
+      await loadFromFirebase();
+      document.getElementById('tab-morning').classList.toggle('active',state.routineSession==='morning');
+      document.getElementById('tab-evening').classList.toggle('active',state.routineSession==='evening');
+      refreshWeather();renderDates();renderRoutine();renderCatholic();renderLPTasks();refreshMarkets();
+      setInterval(refreshWeather,10*60*1000);setInterval(refreshMarkets,5*60*1000);
+    } else {
+      document.getElementById('loginScreen').style.display='flex';
+    }
+  });
+}
+window.signInWithGoogle=async function(){
+  try{ await signInWithPopup(auth, provider); } catch(e){ showToast('Sign in failed. Try again.'); }
+}
+
+init();
+</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/daily-dashboard/sw.js').catch(e=>console.log('SW:',e));});}</script>
+</body>
+</html>
