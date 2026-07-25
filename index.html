@@ -257,7 +257,7 @@ body { font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif; backgro
     <!-- DATES -->
     <div class="card">
       <div class="card-header">
-        <span class="card-title">Upcoming Important Events</span>
+        <span class="card-title">Upcoming Important Dates & Events</span>
         <div style="display:flex;gap:4px">
           <button class="card-action" onclick="showScreen('events')">›</button>
           <button class="card-action" onclick="openDateModal()">+</button>
@@ -334,7 +334,7 @@ body { font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif; backgro
 <div id="screen-events" class="screen">
   <div class="subheader">
     <button class="back-btn" onclick="showScreen('landing')">‹</button>
-    <span class="subheader-title">Upcoming Important Events</span>
+    <span class="subheader-title">Upcoming Important Dates & Events</span>
     <button class="subheader-action" onclick="openDateModal()">+</button>
   </div>
   <div class="page" id="eventsBody"><div class="loading-msg">Loading...</div></div>
@@ -631,14 +631,19 @@ function renderDates(){
   const recurLabels={none:'',weekly:'↻ Weekly',monthly:'↻ Monthly',yearly:'↻ Yearly'};
   const all=getAllEventsSorted();
   const top5=all.slice(0,5);
-  let html=top5.length
-    ?top5.map(d=>dateItemHtml(d,recurLabels)).join('')
-    :'<div class="loading-msg">No upcoming events. Tap + to add.</div>';
-  if(all.length>5){
-    html+=`<button class="add-dashed-btn" onclick="showScreen('events')" style="margin-top:6px">See all ${all.length} events ›</button>`;
+  let html='';
+  if(!top5.length){
+    html='<div class="loading-msg">No upcoming dates or events. Tap + to add.</div>';
+  } else {
+    html=top5.map(d=>dateItemHtml(d,recurLabels)).join('');
   }
-  html+=`<button class="add-dashed-btn" onclick="openDateModal()">+ Add event</button>`;
-  document.getElementById('datesBody').innerHTML=html;
+  // Buttons always visible, stacked clearly
+  let btns='';
+  if(all.length>5){
+    btns+=`<button class="add-dashed-btn" onclick="showScreen('events')" style="margin-top:10px;border-color:var(--navy);color:var(--navy)">📅 See all ${all.length} dates & events ›</button>`;
+  }
+  btns+=`<button class="add-dashed-btn" onclick="openDateModal()" style="margin-top:8px">+ Add date or event</button>`;
+  document.getElementById('datesBody').innerHTML=html+btns;
 }
 function renderAllEvents(){
   const recurLabels={none:'',weekly:'↻ Weekly',monthly:'↻ Monthly',yearly:'↻ Yearly'};
@@ -658,7 +663,7 @@ function renderAllEvents(){
       html+=`<div class="card" style="margin-bottom:8px">${dateItemHtml(d,recurLabels)}</div>`;
     });
   }
-  html+=`<button class="add-dashed-btn" onclick="openDateModal()" style="margin-top:4px">+ Add event</button>`;
+  html+=`<button class="add-dashed-btn" onclick="openDateModal()" style="margin-top:4px">+ Add date or event</button>`;
   document.getElementById('eventsBody').innerHTML=html;
 }
 window.deleteDate=async function(id){
@@ -1058,7 +1063,30 @@ async function init(){
       document.getElementById('tab-morning').classList.toggle('active',state.routineSession==='morning');
       document.getElementById('tab-evening').classList.toggle('active',state.routineSession==='evening');
       refreshWeather();renderDates();renderRoutine();renderCatholic();renderLPTasks();refreshMarkets();
-      setInterval(refreshWeather,10*60*1000);setInterval(refreshMarkets,5*60*1000);
+      // Auto-refresh when app comes back into focus
+  document.addEventListener('visibilitychange', ()=>{
+    if(!document.hidden){
+      refreshWeather();
+      refreshMarkets();
+      renderDates();
+      renderRoutine();
+      renderCatholic();
+      renderLPTasks();
+    }
+  });
+
+  // Pull-to-refresh on landing page
+  let touchStartY=0;
+  document.addEventListener('touchstart',e=>{touchStartY=e.touches[0].clientY;},{passive:true});
+  document.addEventListener('touchend',e=>{
+    const diff=e.changedTouches[0].clientY-touchStartY;
+    if(diff>80&&window.scrollY===0&&document.getElementById('screen-landing').classList.contains('active')){
+      showToast('Refreshing...');
+      refreshWeather();refreshMarkets();renderDates();renderRoutine();renderCatholic();renderLPTasks();
+    }
+  },{passive:true});
+
+  setInterval(refreshWeather,10*60*1000);setInterval(refreshMarkets,5*60*1000);
     } else {
       document.getElementById('loginScreen').style.display='flex';
     }
