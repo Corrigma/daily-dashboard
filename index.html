@@ -257,8 +257,11 @@ body { font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif; backgro
     <!-- DATES -->
     <div class="card">
       <div class="card-header">
-        <span class="card-title">Upcoming</span>
-        <button class="card-action" onclick="openDateModal()">+</button>
+        <span class="card-title">Upcoming Important Events</span>
+        <div style="display:flex;gap:4px">
+          <button class="card-action" onclick="showScreen('events')">›</button>
+          <button class="card-action" onclick="openDateModal()">+</button>
+        </div>
       </div>
       <div class="card-body" id="datesBody"><div class="loading-msg">Loading...</div></div>
     </div>
@@ -327,6 +330,16 @@ body { font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif; backgro
   <div class="scripture">"Whatever you do, work at it with all your heart." — Col 3:23</div>
 </div>
 
+<!-- ══ SCREEN: EVENTS ═════════════════════════════════════════════════════ -->
+<div id="screen-events" class="screen">
+  <div class="subheader">
+    <button class="back-btn" onclick="showScreen('landing')">‹</button>
+    <span class="subheader-title">Upcoming Important Events</span>
+    <button class="subheader-action" onclick="openDateModal()">+</button>
+  </div>
+  <div class="page" id="eventsBody"><div class="loading-msg">Loading...</div></div>
+</div>
+
 <!-- ══ SCREEN: TASK MANAGER ══════════════════════════════════════════════ -->
 <div id="screen-tasks" class="screen">
   <div class="subheader">
@@ -379,8 +392,8 @@ body { font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif; backgro
 <!-- Date modal -->
 <div class="modal-overlay" id="dateModal" style="display:none">
   <div class="modal">
-    <h3>Add Important Date</h3>
-    <label class="modal-label">Label</label>
+    <h3>Add Important Event</h3>
+    <label class="modal-label">Event name</label>
     <input type="text" id="dateLabel" placeholder="e.g. Wedding Anniversary 💍">
     <label class="modal-label">Date</label>
     <input type="date" id="dateValue">
@@ -474,19 +487,19 @@ import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/fireb
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 const firebaseConfig = {
-  apiKey:"%%FIREBASE_API_KEY%%",
-  authDomain:"%%FIREBASE_AUTH_DOMAIN%%",
-  projectId:"%%FIREBASE_PROJECT_ID%%",
-  storageBucket:"%%FIREBASE_STORAGE_BUCKET%%",
-  messagingSenderId:"%%FIREBASE_MESSAGING_SENDER_ID%%",
-  appId:"%%FIREBASE_APP_ID%%"
+  apiKey:"AIzaSyCS9kGc8RllKG-qpcMGfBLWxle_FmUJb1k",
+  authDomain:"daily-dashboard-58434.firebaseapp.com",
+  projectId:"daily-dashboard-58434",
+  storageBucket:"daily-dashboard-58434.firebasestorage.app",
+  messagingSenderId:"487255954196",
+  appId:"1:487255954196:web:d6e1a08c75b9e96b68a801"
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 const USER = 'mark';
-const FINNHUB = '%%FINNHUB_KEY%%';
+const FINNHUB = 'd9ht3q9r01qjmfdadou0d9ht3q9r01qjmfdadoug';
 
 // ── STATE ──────────────────────────────────────────────────────────────────
 let state = {
@@ -548,6 +561,7 @@ window.showScreen=function(name, fromLanding){
   window.scrollTo(0,0);
   if(name==='tasks') renderTM();
   if(name==='landing') renderLPTasks();
+  if(name==='events') renderAllEvents();
 }
 
 // ── CLOCK ──────────────────────────────────────────────────────────────────
@@ -594,16 +608,64 @@ function getNextOccurrence(dateStr,recur){
   while(d<now){if(recur==='weekly')d.setDate(d.getDate()+7);else if(recur==='monthly')d.setMonth(d.getMonth()+1);else if(recur==='yearly')d.setFullYear(d.getFullYear()+1);else break;}
   return d;
 }
-function renderDates(){
+function getAllEventsSorted(){
   const now=new Date();now.setHours(0,0,0,0);
   const recurLabels={none:'',weekly:'↻ Weekly',monthly:'↻ Monthly',yearly:'↻ Yearly'};
-  const sorted=state.dates.map(d=>{const next=getNextOccurrence(d.date,d.recur);const diff=Math.ceil((next-now)/86400000);return{...d,diff,next};}).filter(d=>d.diff>=0).sort((a,b)=>a.diff-b.diff).slice(0,5);
-  let html=sorted.length?sorted.map(d=>`<div class="date-item"><div class="date-badge"><div class="days">${d.diff}</div><div class="dlabel">${d.diff===1?'day':'days'}</div></div><div class="date-info"><div class="date-name">${d.label}</div><div class="date-when">${d.next.toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'})}</div>${d.recur&&d.recur!=='none'?`<div class="date-recur">${recurLabels[d.recur]}</div>`:''}</div><button onclick="deleteDate('${d.id}')" style="background:none;border:none;color:#ddd;font-size:20px;cursor:pointer;flex-shrink:0;padding:0 4px">×</button></div>`).join(''):'<div class="loading-msg">No upcoming dates. Tap + to add.</div>';
-  document.getElementById('datesBody').innerHTML=html+`<button class="add-dashed-btn" onclick="openDateModal()">+ Add date</button>`;
+  return state.dates
+    .map(d=>{const next=getNextOccurrence(d.date,d.recur);const diff=Math.ceil((next-now)/86400000);return{...d,diff,next};})
+    .filter(d=>d.diff>=0)
+    .sort((a,b)=>a.diff-b.diff);
+}
+function dateItemHtml(d, recurLabels){
+  return `<div class="date-item">
+    <div class="date-badge"><div class="days">${d.diff}</div><div class="dlabel">${d.diff===1?'day':'days'}</div></div>
+    <div class="date-info">
+      <div class="date-name">${d.label}</div>
+      <div class="date-when">${d.next.toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'})}</div>
+      ${d.recur&&d.recur!=='none'?`<div class="date-recur">${recurLabels[d.recur]}</div>`:''}
+    </div>
+    <button onclick="deleteDate('${d.id}')" style="background:none;border:none;color:#ddd;font-size:20px;cursor:pointer;flex-shrink:0;padding:0 4px">×</button>
+  </div>`;
+}
+function renderDates(){
+  const recurLabels={none:'',weekly:'↻ Weekly',monthly:'↻ Monthly',yearly:'↻ Yearly'};
+  const all=getAllEventsSorted();
+  const top5=all.slice(0,5);
+  let html=top5.length
+    ?top5.map(d=>dateItemHtml(d,recurLabels)).join('')
+    :'<div class="loading-msg">No upcoming events. Tap + to add.</div>';
+  if(all.length>5){
+    html+=`<button class="add-dashed-btn" onclick="showScreen('events')" style="margin-top:6px">See all ${all.length} events ›</button>`;
+  }
+  html+=`<button class="add-dashed-btn" onclick="openDateModal()">+ Add event</button>`;
+  document.getElementById('datesBody').innerHTML=html;
+}
+function renderAllEvents(){
+  const recurLabels={none:'',weekly:'↻ Weekly',monthly:'↻ Monthly',yearly:'↻ Yearly'};
+  const all=getAllEventsSorted();
+  let html='';
+  if(!all.length){
+    html='<div class="loading-msg">No upcoming events. Tap + to add one.</div>';
+  } else {
+    // Group by month
+    let currentMonth='';
+    all.forEach(d=>{
+      const month=d.next.toLocaleDateString([],{month:'long',year:'numeric'});
+      if(month!==currentMonth){
+        currentMonth=month;
+        html+=`<div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin:12px 0 6px">${month}</div>`;
+      }
+      html+=`<div class="card" style="margin-bottom:8px">${dateItemHtml(d,recurLabels)}</div>`;
+    });
+  }
+  html+=`<button class="add-dashed-btn" onclick="openDateModal()" style="margin-top:4px">+ Add event</button>`;
+  document.getElementById('eventsBody').innerHTML=html;
 }
 window.deleteDate=async function(id){
   state.dates=state.dates.filter(d=>d.id!==id);
-  renderDates();await save();showToast('Date removed');
+  renderDates();
+  if(document.getElementById('screen-events').classList.contains('active')) renderAllEvents();
+  await save();showToast('Event removed');
 }
 window.openDateModal=function(){document.getElementById('dateModal').style.display='flex';}
 window.closeDateModal=function(){document.getElementById('dateModal').style.display='none';document.getElementById('dateLabel').value='';document.getElementById('dateValue').value='';document.getElementById('dateRecur').value='none';}
@@ -611,7 +673,9 @@ window.saveDate=async function(){
   const label=document.getElementById('dateLabel').value.trim(),date=document.getElementById('dateValue').value,recur=document.getElementById('dateRecur').value;
   if(!label||!date){showToast('Please fill in both fields');return;}
   state.dates.push({id:Date.now().toString(),label,date,recur});
-  closeDateModal();renderDates();await save();showToast('Date saved ✓');
+  closeDateModal();renderDates();
+  if(document.getElementById('screen-events').classList.contains('active')) renderAllEvents();
+  await save();showToast('Event saved ✓');
 }
 
 // ── ROUTINE ────────────────────────────────────────────────────────────────
