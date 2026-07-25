@@ -657,7 +657,7 @@ async function renderWeatherScreen(){
       `&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation_probability,weather_code,wind_speed_10m,wind_direction_10m,surface_pressure`+
       `&hourly=temperature_2m,precipitation_probability,weather_code,wind_speed_10m,wind_direction_10m`+
       `&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max,sunrise,sunset`+
-      `&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=auto&forecast_days=7`;
+      `&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=auto&forecast_days=7&models=best_match`;
 
     const r=await fetch(url);const d=await r.json();
     const c=d.current;const hourly=d.hourly;const daily=d.daily;
@@ -748,7 +748,7 @@ window.refreshWeather=async function(){
     let lat=37.7789,lon=-97.5311,locName='Colwich, KS';
     try{const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{timeout:5000}));lat=pos.coords.latitude;lon=pos.coords.longitude;const geo=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);const gd=await geo.json();locName=gd.address?.city||gd.address?.town||gd.address?.village||locName;}catch(e){}
     document.getElementById('weatherLocation').textContent=`Weather · ${locName}`;
-    const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation_probability,weather_code,wind_speed_10m,wind_direction_10m&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=auto&forecast_days=1`);
+    const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation_probability,weather_code,wind_speed_10m,wind_direction_10m&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=auto&forecast_days=1&models=best_match`);
     const d=await r.json();const c=d.current;const day=d.daily;
     const desc=WMO[c.weather_code]||'Unknown';const icon=desc.split(' ').pop();
     const sr=new Date(day.sunrise[0]).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
