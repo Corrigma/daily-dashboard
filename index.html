@@ -474,19 +474,19 @@ import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/fireb
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 const firebaseConfig = {
-  apiKey:"AIzaSyCS9kGc8RllKG-qpcMGfBLWxle_FmUJb1k",
-  authDomain:"daily-dashboard-58434.firebaseapp.com",
-  projectId:"daily-dashboard-58434",
-  storageBucket:"daily-dashboard-58434.firebasestorage.app",
-  messagingSenderId:"487255954196",
-  appId:"1:487255954196:web:d6e1a08c75b9e96b68a801"
+  apiKey:"%%FIREBASE_API_KEY%%",
+  authDomain:"%%FIREBASE_AUTH_DOMAIN%%",
+  projectId:"%%FIREBASE_PROJECT_ID%%",
+  storageBucket:"%%FIREBASE_STORAGE_BUCKET%%",
+  messagingSenderId:"%%FIREBASE_MESSAGING_SENDER_ID%%",
+  appId:"%%FIREBASE_APP_ID%%"
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 const USER = 'mark';
-const FINNHUB = 'd9ht3q9r01qjmfdadou0d9ht3q9r01qjmfdadoug';
+const FINNHUB = '%%FINNHUB_KEY%%';
 
 // ── STATE ──────────────────────────────────────────────────────────────────
 let state = {
@@ -598,8 +598,12 @@ function renderDates(){
   const now=new Date();now.setHours(0,0,0,0);
   const recurLabels={none:'',weekly:'↻ Weekly',monthly:'↻ Monthly',yearly:'↻ Yearly'};
   const sorted=state.dates.map(d=>{const next=getNextOccurrence(d.date,d.recur);const diff=Math.ceil((next-now)/86400000);return{...d,diff,next};}).filter(d=>d.diff>=0).sort((a,b)=>a.diff-b.diff).slice(0,5);
-  let html=sorted.length?sorted.map(d=>`<div class="date-item"><div class="date-badge"><div class="days">${d.diff}</div><div class="dlabel">${d.diff===1?'day':'days'}</div></div><div class="date-info"><div class="date-name">${d.label}</div><div class="date-when">${d.next.toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'})}</div>${d.recur&&d.recur!=='none'?`<div class="date-recur">${recurLabels[d.recur]}</div>`:''}</div></div>`).join(''):'<div class="loading-msg">No upcoming dates. Tap + to add.</div>';
+  let html=sorted.length?sorted.map(d=>`<div class="date-item"><div class="date-badge"><div class="days">${d.diff}</div><div class="dlabel">${d.diff===1?'day':'days'}</div></div><div class="date-info"><div class="date-name">${d.label}</div><div class="date-when">${d.next.toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'})}</div>${d.recur&&d.recur!=='none'?`<div class="date-recur">${recurLabels[d.recur]}</div>`:''}</div><button onclick="deleteDate('${d.id}')" style="background:none;border:none;color:#ddd;font-size:20px;cursor:pointer;flex-shrink:0;padding:0 4px">×</button></div>`).join(''):'<div class="loading-msg">No upcoming dates. Tap + to add.</div>';
   document.getElementById('datesBody').innerHTML=html+`<button class="add-dashed-btn" onclick="openDateModal()">+ Add date</button>`;
+}
+window.deleteDate=async function(id){
+  state.dates=state.dates.filter(d=>d.id!==id);
+  renderDates();await save();showToast('Date removed');
 }
 window.openDateModal=function(){document.getElementById('dateModal').style.display='flex';}
 window.closeDateModal=function(){document.getElementById('dateModal').style.display='none';document.getElementById('dateLabel').value='';document.getElementById('dateValue').value='';document.getElementById('dateRecur').value='none';}
@@ -618,18 +622,42 @@ function renderRoutine(){
   const habits=state.habits.filter(h=>h.session===state.routineSession);
   if(!habits.length){document.getElementById('routineBody').innerHTML='<div class="loading-msg">No habits yet.</div>';return;}
   document.getElementById('routineBody').innerHTML=habits.map(h=>{
+    const editBtns=`<div style="display:flex;gap:6px;flex-shrink:0;margin-top:2px">
+      <button onclick="editHabit('${h.id}')" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;color:var(--slate);cursor:pointer">Edit</button>
+      <button onclick="deleteHabit('${h.id}')" style="background:#FEE2E2;border:none;border-radius:6px;padding:3px 8px;font-size:11px;color:var(--red);cursor:pointer">✕</button>
+    </div>`;
     if(h.type==='daily'){
       const done=h.lastDone===today;const streak=h.streak||0;const best=h.bestStreak||0;
-      return `<div class="habit-row"><div class="habit-check ${done?'done':''}" onclick="toggleHabit('${h.id}')">${done?'✓':''}</div><div class="habit-info"><div class="habit-name ${done?'done':''}">${h.name}</div><div class="habit-meta">Daily habit</div><div class="streak-row">${streak>0?`<div class="streak-badge">🔥 ${streak} day streak</div>`:'<div class="streak-badge" style="background:#eee;color:#999">No streak yet</div>'}${best>0?`<div class="best-badge">Best: ${best}</div>`:''}</div></div></div>`;
+      return `<div class="habit-row"><div class="habit-check ${done?'done':''}" onclick="toggleHabit('${h.id}')">${done?'✓':''}</div><div class="habit-info"><div class="habit-name ${done?'done':''}">${h.name}</div><div class="habit-meta">Daily habit</div><div class="streak-row">${streak>0?`<div class="streak-badge">🔥 ${streak} day streak</div>`:'<div class="streak-badge" style="background:#eee;color:#999">No streak yet</div>'}${best>0?`<div class="best-badge">Best: ${best}</div>`:''}</div></div>${editBtns}</div>`;
     }else{
       const goal=h.weeklyGoal||4;const weeklyDone=h.weeklyDone||[];
       const ws=new Date(now);ws.setDate(now.getDate()-now.getDay());ws.setHours(0,0,0,0);
       const doneThisWeek=weeklyDone.filter(d=>{const dd=new Date(d+'T00:00:00');return dd>=ws;}).length;
       const isToday=weeklyDone.includes(today);const wstreak=h.weekStreak||0;
       const dots=Array.from({length:goal},(_,i)=>`<div class="dot ${i<doneThisWeek?'filled':''}"></div>`).join('');
-      return `<div class="habit-row"><div class="habit-check ${isToday?'done':''}" onclick="toggleHabit('${h.id}')">${isToday?'✓':''}</div><div class="habit-info"><div class="habit-name ${isToday?'done':''}">${h.name}</div><div class="habit-meta">Goal: ${goal}× per week</div><div class="weekly-bar"><div class="weekly-dots">${dots}</div><div class="weekly-label">${doneThisWeek}/${goal} this week</div></div>${wstreak>0?`<div class="streak-row"><div class="streak-badge">🏆 ${wstreak} week streak</div></div>`:''}</div></div>`;
+      return `<div class="habit-row"><div class="habit-check ${isToday?'done':''}" onclick="toggleHabit('${h.id}')">${isToday?'✓':''}</div><div class="habit-info"><div class="habit-name ${isToday?'done':''}">${h.name}</div><div class="habit-meta">Goal: ${goal}× per week</div><div class="weekly-bar"><div class="weekly-dots">${dots}</div><div class="weekly-label">${doneThisWeek}/${goal} this week</div></div>${wstreak>0?`<div class="streak-row"><div class="streak-badge">🏆 ${wstreak} week streak</div></div>`:''}</div>${editBtns}</div>`;
     }
   }).join('');
+}
+window.deleteHabit=async function(id){
+  if(!confirm('Delete this habit? Your streak data will be lost.'))return;
+  state.habits=state.habits.filter(h=>h.id!==id);
+  renderRoutine();await save();showToast('Habit deleted');
+}
+window.editHabit=function(id){
+  const h=state.habits.find(h=>h.id===id);if(!h)return;
+  state.editingHabitId=id;
+  document.getElementById('habitName').value=h.name;
+  document.getElementById('habitSession').value=h.session;
+  document.getElementById('habitType').value=h.type;
+  if(h.type==='weekly'){
+    document.getElementById('goalField').style.display='block';
+    document.getElementById('habitGoal').value=h.weeklyGoal||4;
+  }else{
+    document.getElementById('goalField').style.display='none';
+  }
+  document.querySelector('#habitModal h3').textContent='Edit Habit';
+  document.getElementById('habitModal').style.display='flex';
 }
 window.toggleHabit=async function(id){
   const today=todayStr();const now=new Date();
@@ -644,14 +672,29 @@ window.toggleHabit=async function(id){
   }
   renderRoutine();await save();
 }
-window.openHabitModal=function(){document.getElementById('habitModal').style.display='flex';}
-window.closeHabitModal=function(){document.getElementById('habitModal').style.display='none';document.getElementById('habitName').value='';document.getElementById('goalField').style.display='none';document.getElementById('habitType').value='daily';}
+window.openHabitModal=function(){state.editingHabitId=null;document.querySelector('#habitModal h3').textContent='Add Habit';document.getElementById('habitModal').style.display='flex';}
+window.closeHabitModal=function(){document.getElementById('habitModal').style.display='none';document.getElementById('habitName').value='';document.getElementById('goalField').style.display='none';document.getElementById('habitType').value='daily';state.editingHabitId=null;document.querySelector('#habitModal h3').textContent='Add Habit';}
 window.saveHabit=async function(){
   const name=document.getElementById('habitName').value.trim(),session=document.getElementById('habitSession').value,type=document.getElementById('habitType').value,goal=parseInt(document.getElementById('habitGoal').value)||4;
   if(!name){showToast('Enter a habit name');return;}
-  const h={id:Date.now().toString(),name,session,type};
-  if(type==='daily'){h.streak=0;h.bestStreak=0;h.lastDone='';}else{h.weeklyGoal=goal;h.weeklyDone=[];h.weekStreak=0;}
-  state.habits.push(h);closeHabitModal();renderRoutine();await save();showToast('Habit added ✓');
+  if(state.editingHabitId){
+    // Edit existing
+    const h=state.habits.find(h=>h.id===state.editingHabitId);
+    if(h){
+      h.name=name;h.session=session;
+      if(type!==h.type){
+        h.type=type;
+        if(type==='daily'){h.streak=0;h.bestStreak=0;h.lastDone='';}
+        else{h.weeklyGoal=goal;h.weeklyDone=[];h.weekStreak=0;}
+      } else if(type==='weekly'){h.weeklyGoal=goal;}
+    }
+    closeHabitModal();renderRoutine();await save();showToast('Habit updated ✓');
+  } else {
+    // Add new
+    const h={id:Date.now().toString(),name,session,type};
+    if(type==='daily'){h.streak=0;h.bestStreak=0;h.lastDone='';}else{h.weeklyGoal=goal;h.weeklyDone=[];h.weekStreak=0;}
+    state.habits.push(h);closeHabitModal();renderRoutine();await save();showToast('Habit added ✓');
+  }
 }
 
 // ── CATHOLIC ───────────────────────────────────────────────────────────────
