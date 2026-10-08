@@ -144,13 +144,24 @@ body { font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif; backgro
 .stock-price { font-weight:600; color:var(--navy); }
 .market-updated { font-size:10px; color:var(--muted); text-align:right; margin-top:8px; }
 
-/* ── HUNTING ── */
-.hunting-btn { display:flex; align-items:center; gap:12px; background:linear-gradient(135deg,#1A2E1A,#2D4A2D); border-radius:14px; padding:18px 20px; margin:4px 16px 16px; cursor:pointer; border-left:var(--rule); border-top:none; border-right:none; border-bottom:none; width:calc(100% - 32px); box-shadow:0 2px 8px #1A2E1A22; }
-.hunting-icon { font-size:28px; }
-.hunting-text { color:#fff; text-align:left; }
-.hunting-title { font-size:16px; font-weight:700; }
-.hunting-sub { font-size:12px; color:#82C882; margin-top:2px; }
-.hunting-arrow { color:var(--gold); font-size:22px; margin-left:auto; }
+/* ── SECTION TOGGLES ── */
+.settings-btn { position:fixed; bottom:20px; right:20px; width:48px; height:48px; border-radius:50%; background:var(--navy); color:var(--gold); border:none; font-size:22px; cursor:pointer; box-shadow:0 4px 12px #1A203540; display:flex; align-items:center; justify-content:center; z-index:50; }
+.toggle-row { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border); }
+.toggle-row:last-child { border-bottom:none; }
+.toggle-label { font-size:15px; font-weight:500; color:var(--navy); }
+.toggle-switch { position:relative; width:48px; height:26px; }
+.toggle-switch input { opacity:0; width:0; height:0; }
+.toggle-slider { position:absolute; cursor:pointer; inset:0; background:#ccc; border-radius:26px; transition:0.3s; }
+.toggle-slider:before { position:absolute; content:""; height:20px; width:20px; left:3px; bottom:3px; background:white; border-radius:50%; transition:0.3s; }
+input:checked + .toggle-slider { background:var(--navy); }
+input:checked + .toggle-slider:before { transform:translateX(22px); }
+
+/* ── WEBSITES ── */
+.website-btn { display:flex; align-items:center; gap:10px; background:var(--bg); border:1.5px solid var(--border); border-radius:10px; padding:10px 14px; margin-bottom:8px; cursor:pointer; text-decoration:none; width:100%; }
+.website-btn:last-of-type { margin-bottom:0; }
+.website-icon { font-size:20px; flex-shrink:0; }
+.website-label { font-size:14px; font-weight:600; color:var(--navy); flex:1; text-align:left; }
+.website-arrow { color:var(--muted); font-size:16px; }
 .scripture { text-align:center; padding:8px 20px 0; font-size:12px; color:var(--muted); font-style:italic; }
 
 /* ── WEATHER SCREEN ── */
@@ -276,7 +287,7 @@ body { font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif; backgro
   </div>
   <div class="page">
     <!-- WEATHER -->
-    <div class="card">
+    <div class="card" id="card-weather">
       <div class="card-header">
         <span class="card-title" id="weatherLocation">Weather · Detecting...</span>
         <button class="card-action" onclick="showScreen('weather')">›</button>
@@ -284,7 +295,7 @@ body { font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif; backgro
       <div class="card-body" id="weatherBody"><div class="loading-msg">📡 Fetching weather...</div></div>
     </div>
     <!-- DATES -->
-    <div class="card">
+    <div class="card" id="card-dates">
       <div class="card-header">
         <span class="card-title">Upcoming Important Dates & Events</span>
         <div style="display:flex;gap:4px">
@@ -295,7 +306,7 @@ body { font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif; backgro
       <div class="card-body" id="datesBody"><div class="loading-msg">Loading...</div></div>
     </div>
     <!-- ROUTINE -->
-    <div class="card">
+    <div class="card" id="card-routine">
       <div class="card-header">
         <span class="card-title">Routine</span>
         <button class="card-action" onclick="openHabitModal()">+</button>
@@ -308,15 +319,16 @@ body { font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif; backgro
         <div id="routineBody"><div class="loading-msg">Loading...</div></div>
       </div>
     </div>
-    <!-- CATHOLIC -->
-    <div class="card">
+    <!-- WEBSITES -->
+    <div class="card" id="card-websites">
       <div class="card-header">
-        <span class="card-title">Catholic Daily</span>
+        <span class="card-title">Important Websites</span>
+        <button class="card-action" onclick="openWebsiteModal()">+</button>
       </div>
-      <div class="card-body" id="catholicBody"><div class="loading-msg">Loading...</div></div>
+      <div class="card-body" id="websitesBody"><div class="loading-msg">Loading...</div></div>
     </div>
     <!-- CALENDAR -->
-    <div class="card">
+    <div class="card" id="card-calendar">
       <div class="card-header">
         <span class="card-title">Calendar</span>
         <button class="card-action" id="calSignBtn" onclick="calSignIn()" style="display:none">Connect</button>
@@ -331,7 +343,7 @@ body { font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif; backgro
       </div>
     </div>
     <!-- TASKS (landing) -->
-    <div class="card">
+    <div class="card" id="card-tasks">
       <div class="card-header">
         <span class="card-title">Urgent &amp; Priority Tasks</span>
         <button class="card-action" onclick="showScreen('tasks')">›</button>
@@ -339,7 +351,7 @@ body { font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif; backgro
       <div class="card-body" id="lpTasksBody"><div class="loading-msg">Loading...</div></div>
     </div>
     <!-- MARKETS -->
-    <div class="card">
+    <div class="card" id="card-markets">
       <div class="card-header">
         <span class="card-title">Markets</span>
         <button class="card-action" onclick="openWatchlistModal()">+</button>
@@ -347,16 +359,11 @@ body { font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif; backgro
       <div class="card-body" id="marketsBody"><div class="loading-msg">📈 Fetching...</div></div>
     </div>
   </div>
-  <button class="hunting-btn" onclick="showToast('Hunting & Fishing Forecast coming soon')">
-    <div class="hunting-icon">🦌🎣</div>
-    <div class="hunting-text">
-      <div class="hunting-title">Hunting &amp; Fishing Forecast</div>
-      <div class="hunting-sub">Tap to view today's forecast</div>
-    </div>
-    <div class="hunting-arrow">›</div>
-  </button>
   <div class="scripture">"Whatever you do, work at it with all your heart." — Col 3:23</div>
 </div>
+
+<!-- Settings FAB -->
+<button class="settings-btn" id="settingsFab" onclick="showScreen('settings')" title="Settings">⚙️</button>
 
 <!-- ══ SCREEN: WEATHER ════════════════════════════════════════════════════ -->
 <div id="screen-weather" class="screen">
@@ -506,7 +513,44 @@ body { font-family:-apple-system,'SF Pro Display','Segoe UI',sans-serif; backgro
   </div>
 </div>
 
+<!-- WEBSITE MODAL -->
+<div class="modal-overlay" id="websiteModal" style="display:none">
+  <div class="modal">
+    <h3 id="websiteModalTitle">Add Website</h3>
+    <label class="modal-label">Label (display name)</label>
+    <input type="text" id="websiteLabel" placeholder="e.g. Daily Readings, ESPN, Work Portal">
+    <label class="modal-label">URL</label>
+    <input type="url" id="websiteUrl" placeholder="https://...">
+    <label class="modal-label">Icon (emoji)</label>
+    <input type="text" id="websiteIcon" placeholder="e.g. 📖 🏈 💼" maxlength="4">
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeWebsiteModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveWebsite()">Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
+
+<!-- SETTINGS SCREEN -->
+<div id="screen-settings" class="screen">
+  <div class="subheader">
+    <button class="back-btn" onclick="showScreen('landing')">‹</button>
+    <span class="subheader-title">Settings</span>
+  </div>
+  <div class="page">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Show / Hide Sections</span></div>
+      <div class="card-body" id="togglesBody"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Account</span></div>
+      <div class="card-body">
+        <button onclick="signOutUser()" style="width:100%;padding:11px;background:#FEE2E2;color:var(--red);border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">Sign Out of Google</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- LOGIN SCREEN -->
 <div id="loginScreen" style="display:none;position:fixed;inset:0;background:linear-gradient(160deg,#1A2035 0%,#2C3A5C 100%);z-index:500;flex-direction:column;align-items:center;justify-content:center;padding:40px;">
@@ -552,6 +596,10 @@ let state = {
     {id:'h7',name:'Lights out by 9:30 PM',session:'evening',type:'daily',streak:0,bestStreak:0,lastDone:''},
   ],
   projects:{ job:[], biz:[], home:[], camp:[], archive:[] },
+  websites:[
+    {label:'Daily Bible Readings',url:'https://bible.usccb.org/daily-bible-reading',icon:'📖'},
+  ],
+  sectionToggles:{weather:true,dates:true,routine:true,websites:true,calendar:true,tasks:true,markets:true},
   watchlist:[
     {ticker:'FXAIX',name:'Fidelity S&P 500'},
     {ticker:'VOO',name:'Vanguard S&P 500'},
@@ -578,6 +626,8 @@ async function loadFromFirebase(){
       if(d.habits) state.habits=d.habits;
       if(d.projects) state.projects=d.projects;
       if(d.watchlist) state.watchlist=d.watchlist;
+      if(d.websites) state.websites=d.websites;
+      if(d.sectionToggles) state.sectionToggles={...state.sectionToggles,...d.sectionToggles};
       if(!state.projects.archive) state.projects.archive=[];
     }
   }catch(e){console.log('Load:',e);}
@@ -587,25 +637,29 @@ async function save(){
     await setDoc(doc(db,'users',USER),{
       dates:state.dates,habits:state.habits,
       projects:state.projects,watchlist:state.watchlist,
+      websites:state.websites,sectionToggles:state.sectionToggles,
       updatedAt:new Date().toISOString()
     });
   }catch(e){console.log('Save:',e);}
 }
 
 // ── NAVIGATION ─────────────────────────────────────────────────────────────
-window.showScreen=function(name, fromLanding){
+window.showScreen=function(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
+  const fab=document.getElementById('settingsFab');
+  if(fab) fab.style.display=name==='landing'?'flex':'none';
   window.scrollTo(0,0);
   if(name==='tasks') renderTM();
-  if(name==='landing') renderLPTasks();
+  if(name==='landing'){renderLPTasks();applyToggles();}
   if(name==='events') renderAllEvents();
   if(name==='weather') renderWeatherScreen();
+  if(name==='settings') renderSettings();
 }
 
 window.refreshAll=function(){
   showToast('Refreshing...');
-  refreshWeather();refreshMarkets();renderDates();renderRoutine();renderCatholic();renderLPTasks();
+  refreshWeather();refreshMarkets();renderDates();renderRoutine();renderWebsites();renderLPTasks();
   if(calAccessToken) renderCalendar();
   if(document.getElementById('screen-weather').classList.contains('active')) renderWeatherScreen();
 }
@@ -626,16 +680,48 @@ function updateClock(){
 let wxCustomLat=null, wxCustomLon=null, wxCustomName=null;
 
 window.promptWeatherLocation=function(){
-  const input=prompt('Enter city name or leave blank to use current location:');
-  if(input===null) return;
-  if(!input.trim()){ wxCustomLat=null;wxCustomLon=null;wxCustomName=null; renderWeatherScreen(); return; }
-  fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(input)}&format=json&limit=1`)
-    .then(r=>r.json()).then(data=>{
-      if(!data.length){showToast('Location not found');return;}
-      wxCustomLat=parseFloat(data[0].lat);wxCustomLon=parseFloat(data[0].lon);
-      wxCustomName=data[0].display_name.split(',').slice(0,2).join(',');
-      renderWeatherScreen();
-    }).catch(()=>showToast('Location search failed'));
+  // Show inline search UI at top of weather screen
+  const body=document.getElementById('weatherScreenBody');
+  body.innerHTML=`
+    <div style="margin-bottom:12px">
+      <div style="position:relative">
+        <input id="wxSearchInput" type="text" placeholder="Search city or town..." 
+          style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;color:var(--navy);background:#fff"
+          oninput="wxSearchDebounce()" autocomplete="off">
+      </div>
+      <div id="wxSuggestions" style="background:#fff;border:1.5px solid var(--border);border-radius:10px;margin-top:4px;overflow:hidden;display:none"></div>
+      <button onclick="wxUseCurrentLocation()" style="width:100%;margin-top:10px;padding:11px;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-weight:600;color:var(--slate);cursor:pointer">📍 Use Current Location</button>
+    </div>`;
+  document.getElementById('wxSearchInput').focus();
+}
+let wxSearchTimer=null;
+window.wxSearchDebounce=function(){
+  clearTimeout(wxSearchTimer);
+  wxSearchTimer=setTimeout(wxSearchLocations,350);
+}
+async function wxSearchLocations(){
+  const q=document.getElementById('wxSearchInput')?.value?.trim();
+  const sugBox=document.getElementById('wxSuggestions');
+  if(!q||q.length<2){if(sugBox)sugBox.style.display='none';return;}
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=6&addressdetails=1`);
+    const data=await r.json();
+    if(!data.length){if(sugBox)sugBox.style.display='none';return;}
+    sugBox.style.display='block';
+    sugBox.innerHTML=data.map((d,i)=>{
+      const name=[d.address?.city||d.address?.town||d.address?.village||d.name,d.address?.state,d.address?.country].filter(Boolean).join(', ');
+      return `<div onclick="wxSelectLocation(${d.lat},${d.lon},'${name.replace(/'/g,"\\'")}${name}')" 
+        style="padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-size:14px;color:var(--navy)"
+        onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">${name}</div>`;
+    }).join('');
+  }catch(e){}
+}
+window.wxSelectLocation=function(lat,lon,name){
+  wxCustomLat=parseFloat(lat);wxCustomLon=parseFloat(lon);wxCustomName=name;
+  renderWeatherScreen();
+}
+window.wxUseCurrentLocation=function(){
+  wxCustomLat=null;wxCustomLon=null;wxCustomName=null;renderWeatherScreen();
 }
 
 async function renderWeatherScreen(){
@@ -730,7 +816,7 @@ async function renderWeatherScreen(){
       </div>`;
     });
 
-    html+=`<button class="wx-location-btn" onclick="promptWeatherLocation()">📍 Change Location</button>`;
+    html+=`<button class="wx-location-btn" onclick="promptWeatherLocation()">🔍 Search Another Location</button>`;
     document.getElementById('weatherScreenBody').innerHTML=html;
   }catch(e){
     document.getElementById('weatherScreenBody').innerHTML='<div class="loading-msg">⚠️ Weather unavailable. Check connection.</div>';
@@ -852,13 +938,24 @@ function renderRoutine(){
   const habits=state.habits.filter(h=>h.session===state.routineSession);
   if(!habits.length){document.getElementById('routineBody').innerHTML='<div class="loading-msg">No habits yet.</div>';return;}
   document.getElementById('routineBody').innerHTML=habits.map(h=>{
-    const editBtns=`<div style="display:flex;gap:6px;flex-shrink:0;margin-top:2px">
+    const isPaused=h.paused;
+    const editBtns=`<div style="display:flex;gap:6px;flex-shrink:0;margin-top:2px;flex-wrap:wrap">
       <button onclick="editHabit('${h.id}')" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;color:var(--slate);cursor:pointer">Edit</button>
+      <button onclick="togglePauseHabit('${h.id}')" style="background:${isPaused?'#EBF5EC':'#FEF9EC'};border:none;border-radius:6px;padding:3px 8px;font-size:11px;color:${isPaused?'var(--green)':'#8B6914'};cursor:pointer">${isPaused?'▶ Resume':'⏸ Pause'}</button>
       <button onclick="deleteHabit('${h.id}')" style="background:#FEE2E2;border:none;border-radius:6px;padding:3px 8px;font-size:11px;color:var(--red);cursor:pointer">✕</button>
     </div>`;
     if(h.type==='daily'){
       const done=h.lastDone===today;const streak=h.streak||0;const best=h.bestStreak||0;
-      return `<div class="habit-row"><div class="habit-check ${done?'done':''}" onclick="toggleHabit('${h.id}')">${done?'✓':''}</div><div class="habit-info"><div class="habit-name ${done?'done':''}">${h.name}</div><div class="habit-meta">Daily habit</div><div class="streak-row">${streak>0?`<div class="streak-badge">🔥 ${streak} day streak</div>`:'<div class="streak-badge" style="background:#eee;color:#999">No streak yet</div>'}${best>0?`<div class="best-badge">Best: ${best}</div>`:''}</div></div>${editBtns}</div>`;
+      // Check if streak was broken (last done was not yesterday and not today)
+      const yest=new Date();yest.setDate(yest.getDate()-1);const ystStr=yest.toISOString().slice(0,10);
+      const streakBroken=streak>0&&h.lastDone&&h.lastDone!==today&&h.lastDone!==ystStr&&!h.paused;
+      const streakDisplay=h.paused
+        ?`<div class="streak-badge" style="background:#8B6914;color:#fff">⏸ ${streak} (paused)</div>`
+        :streakBroken
+          ?`<div class="streak-badge" style="background:var(--red);color:#fff">💔 Streak broken</div>`
+          :streak>0?`<div class="streak-badge">🔥 ${streak} day streak</div>`
+          :'<div class="streak-badge" style="background:#eee;color:#999">No streak yet</div>';
+      return `<div class="habit-row"><div class="habit-check ${done?'done':''}" onclick="${h.paused?'':''}"  onclick="toggleHabit('${h.id}')" style="${h.paused?'opacity:0.5;pointer-events:none':''}">${done?'✓':''}</div><div class="habit-info"><div class="habit-name ${done?'done':''}">${h.name}</div><div class="habit-meta">${h.paused?'⏸ Paused':'Daily habit'}</div><div class="streak-row">${streakDisplay}${best>0?`<div class="best-badge">Best: ${best}</div>`:''}</div></div>${editBtns}</div>`;
     }else{
       const goal=h.weeklyGoal||4;const weeklyDone=h.weeklyDone||[];
       const ws=new Date(now);ws.setDate(now.getDate()-now.getDay());ws.setHours(0,0,0,0);
@@ -873,6 +970,11 @@ window.deleteHabit=async function(id){
   if(!confirm('Delete this habit? Your streak data will be lost.'))return;
   state.habits=state.habits.filter(h=>h.id!==id);
   renderRoutine();await save();showToast('Habit deleted');
+}
+window.togglePauseHabit=async function(id){
+  const h=state.habits.find(h=>h.id===id);if(!h)return;
+  h.paused=!h.paused;
+  renderRoutine();await save();showToast(h.paused?'Streak paused ⏸':'Streak resumed ▶');
 }
 window.editHabit=function(id){
   const h=state.habits.find(h=>h.id===id);if(!h)return;
@@ -893,8 +995,25 @@ window.toggleHabit=async function(id){
   const today=todayStr();const now=new Date();
   const h=state.habits.find(h=>h.id===id);if(!h)return;
   if(h.type==='daily'){
-    if(h.lastDone===today){h.lastDone='';h.streak=Math.max(0,(h.streak||0)-1);}
-    else{const yest=new Date();yest.setDate(yest.getDate()-1);const ys=yest.toISOString().slice(0,10);h.streak=(h.lastDone===ys)?(h.streak||0)+1:1;h.bestStreak=Math.max(h.bestStreak||0,h.streak);h.lastDone=today;}
+    if(h.lastDone===today){
+      // Unchecking today
+      h.lastDone='';h.streak=Math.max(0,(h.streak||0)-1);
+    } else {
+      const yest=new Date();yest.setDate(yest.getDate()-1);const ys=yest.toISOString().slice(0,10);
+      if(h.paused){
+        // Resuming from pause — don't break streak, just continue
+        h.streak=(h.streak||0)+1;
+      } else if(h.lastDone===ys){
+        // Consecutive day — extend streak
+        h.streak=(h.streak||0)+1;
+      } else {
+        // Missed at least one day — streak resets
+        h.streak=1;
+      }
+      h.bestStreak=Math.max(h.bestStreak||0,h.streak);
+      h.lastDone=today;
+      h.paused=false;
+    }
   }else{
     h.weeklyDone=h.weeklyDone||[];
     if(h.weeklyDone.includes(today)){h.weeklyDone=h.weeklyDone.filter(d=>d!==today);}
@@ -927,22 +1046,46 @@ window.saveHabit=async function(){
   }
 }
 
-// ── CATHOLIC ───────────────────────────────────────────────────────────────
-function getEaster(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;return new Date(y,mo-1,day);}
-function getAdvent(y){const xmas=new Date(y,11,25);const dow=xmas.getDay();return new Date(y,11,25-(dow===0?28:dow+21));}
-window.openReadings=function(){window.open('https://bible.usccb.org/daily-bible-reading','_blank');}
-function renderCatholic(){
-  const now=new Date();const today=new Date(now);today.setHours(0,0,0,0);const y=now.getFullYear();
-  const easter=getEaster(y);const ashWed=new Date(easter);ashWed.setDate(ashWed.getDate()-46);
-  const pentecost=new Date(easter);pentecost.setDate(pentecost.getDate()+49);
-  const advent=getAdvent(y);const christmas=new Date(y,11,25);
-  let season='Ordinary Time',seasonColor='#006400',countdown='';
-  if(today>=advent){season='Advent';seasonColor='#6A0DAD';countdown=`${Math.ceil((christmas-today)/86400000)} days until Christmas`;}
-  else if(today>=pentecost){season='Ordinary Time';seasonColor='#006400';countdown=`${Math.ceil((advent-today)/86400000)} days until Advent`;}
-  else if(today>=easter){season='Easter Time';seasonColor='#FFD700';countdown=`${Math.ceil((pentecost-today)/86400000)} days until Pentecost`;}
-  else if(today>=ashWed){season='Lent';seasonColor='#6A0DAD';countdown=`${Math.ceil((easter-today)/86400000)} days until Easter`;}
-  else{countdown=`${Math.ceil((advent-today)/86400000)} days until Advent`;}
-  document.getElementById('catholicBody').innerHTML=`<div class="catholic-season"><div class="season-dot" style="background:${seasonColor}"></div><div class="season-text">${season}</div></div><div class="catholic-countdown">☩ ${countdown}</div><button class="readings-btn" onclick="openReadings()">📖 Today's Mass Readings</button>`;
+// ── IMPORTANT WEBSITES ────────────────────────────────────────────────────
+function renderWebsites(){
+  const sites=state.websites||[];
+  let html='';
+  if(!sites.length){
+    html='<div class="loading-msg">No websites yet. Tap + to add one.</div>';
+  } else {
+    html=sites.map((s,i)=>`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <a href="${s.url}" target="_blank" class="website-btn" style="flex:1;text-decoration:none">
+          <span class="website-icon">${s.icon||'🌐'}</span>
+          <span class="website-label">${s.label}</span>
+          <span class="website-arrow">↗</span>
+        </a>
+        <button onclick="deleteWebsite(${i})" style="background:#FEE2E2;border:none;border-radius:8px;padding:8px 10px;color:var(--red);cursor:pointer;font-size:14px;flex-shrink:0">✕</button>
+      </div>`).join('');
+  }
+  document.getElementById('websitesBody').innerHTML=html;
+}
+window.openWebsiteModal=function(){
+  state.editingWebsiteIdx=null;
+  document.getElementById('websiteModalTitle').textContent='Add Website';
+  document.getElementById('websiteLabel').value='';
+  document.getElementById('websiteUrl').value='';
+  document.getElementById('websiteIcon').value='';
+  document.getElementById('websiteModal').style.display='flex';
+}
+window.closeWebsiteModal=function(){document.getElementById('websiteModal').style.display='none';}
+window.saveWebsite=async function(){
+  const label=document.getElementById('websiteLabel').value.trim();
+  const url=document.getElementById('websiteUrl').value.trim();
+  const icon=document.getElementById('websiteIcon').value.trim()||'🌐';
+  if(!label||!url){showToast('Please enter a label and URL');return;}
+  const fullUrl=url.startsWith('http')?url:'https://'+url;
+  if(!state.websites)state.websites=[];
+  state.websites.push({label,url:fullUrl,icon});
+  closeWebsiteModal();renderWebsites();await save();showToast('Website added ✓');
+}
+window.deleteWebsite=async function(i){
+  state.websites.splice(i,1);renderWebsites();await save();showToast('Removed');
 }
 
 // ── CALENDAR ───────────────────────────────────────────────────────────────
@@ -958,30 +1101,41 @@ function initCalendar(){
     client_id: GCAL_CLIENT_ID,
     scope: GCAL_SCOPES,
     callback: async (resp) => {
-      if(resp.error){ document.getElementById('calBody').innerHTML='<div class="cal-empty">⚠️ Calendar access denied.</div>'; return; }
+      if(resp.error){
+        document.getElementById('calSignBtn').style.display='block';
+        document.getElementById('calBody').innerHTML='<div class="cal-empty">Tap "Connect" to authorize Google Calendar.</div>';
+        return;
+      }
       calAccessToken = resp.access_token;
       calTokenExpiry = Date.now() + (resp.expires_in * 1000);
-      localStorage.setItem('calToken', calAccessToken);
-      localStorage.setItem('calTokenExpiry', calTokenExpiry);
+      try{ localStorage.setItem('calToken', calAccessToken); localStorage.setItem('calTokenExpiry', calTokenExpiry); }catch(e){}
       document.getElementById('calSignBtn').style.display='none';
       await renderCalendar();
     }
   });
-  // Try to restore token from localStorage
+  // Try silent token refresh first (no popup)
   const savedToken = localStorage.getItem('calToken');
   const savedExpiry = parseInt(localStorage.getItem('calTokenExpiry')||'0');
   if(savedToken && savedExpiry > Date.now()+60000){
+    // Token still valid — use it
     calAccessToken = savedToken;
     calTokenExpiry = savedExpiry;
+    document.getElementById('calSignBtn').style.display='none';
     renderCalendar();
   } else {
-    document.getElementById('calSignBtn').style.display='block';
-    document.getElementById('calBody').innerHTML=`<div class="cal-empty">Tap "Connect" above to see your Google Calendar events.</div>`;
+    // Try silent refresh (no popup shown to user)
+    try{
+      calTokenClient.requestAccessToken({prompt:'none'});
+    } catch(e){
+      // Silent failed — show connect button
+      document.getElementById('calSignBtn').style.display='block';
+      document.getElementById('calBody').innerHTML='<div class="cal-empty">Tap "Connect" to authorize Google Calendar.</div>';
+    }
   }
 }
 
 window.calSignIn=function(){
-  if(calTokenClient) calTokenClient.requestAccessToken();
+  if(calTokenClient) calTokenClient.requestAccessToken({prompt:'consent'});
 }
 
 window.changeCalDay=async function(dir){
@@ -1324,6 +1478,43 @@ window.closeWatchlistModal=function(){document.getElementById('watchlistModal').
 function renderWatchlistModal(){document.getElementById('currentWatchlist').innerHTML=state.watchlist.length?state.watchlist.map((s,i)=>`<div class="watchlist-item"><div><strong>${s.ticker}</strong> <span style="color:var(--muted);font-size:12px">${s.name}</span></div><button onclick="removeTicker(${i})" style="background:#FEE2E2;border:none;color:var(--red);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600">Remove</button></div>`).join(''):'<div style="color:var(--muted);font-size:13px;padding:8px 0">No stocks yet.</div>';}
 window.addTicker=async function(){const ticker=document.getElementById('newTicker').value.trim().toUpperCase(),name=document.getElementById('newTickerName').value.trim()||ticker;if(!ticker){showToast('Enter a ticker');return;}if(state.watchlist.find(s=>s.ticker===ticker)){showToast('Already in watchlist');return;}state.watchlist.push({ticker,name});document.getElementById('newTicker').value='';document.getElementById('newTickerName').value='';renderWatchlistModal();await save();showToast(`${ticker} added ✓`);}
 window.removeTicker=async function(i){state.watchlist.splice(i,1);renderWatchlistModal();await save();showToast('Removed ✓');}
+// ── SECTION TOGGLES & SETTINGS ────────────────────────────────────────────
+const SECTION_DEFS=[
+  {id:'weather',label:'Weather',cardId:'card-weather'},
+  {id:'dates',label:'Upcoming Dates & Events',cardId:'card-dates'},
+  {id:'routine',label:'Routine',cardId:'card-routine'},
+  {id:'websites',label:'Important Websites',cardId:'card-websites'},
+  {id:'calendar',label:'Calendar',cardId:'card-calendar'},
+  {id:'tasks',label:'Urgent & Priority Tasks',cardId:'card-tasks'},
+  {id:'markets',label:'Markets',cardId:'card-markets'},
+];
+function applyToggles(){
+  SECTION_DEFS.forEach(s=>{
+    const el=document.getElementById(s.cardId);
+    if(el) el.style.display=state.sectionToggles[s.id]===false?'none':'';
+  });
+}
+function renderSettings(){
+  const t=state.sectionToggles;
+  document.getElementById('togglesBody').innerHTML=SECTION_DEFS.map(s=>`
+    <div class="toggle-row">
+      <span class="toggle-label">${s.label}</span>
+      <label class="toggle-switch">
+        <input type="checkbox" ${t[s.id]!==false?'checked':''} onchange="toggleSection('${s.id}',this.checked)">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>`).join('');
+}
+window.toggleSection=async function(id,val){
+  state.sectionToggles[id]=val;
+  applyToggles();await save();
+}
+window.signOutUser=async function(){
+  if(!confirm('Sign out of Google?'))return;
+  try{google.accounts.oauth2.revoke(calAccessToken,()=>{});localStorage.removeItem('calToken');localStorage.removeItem('calTokenExpiry');}catch(e){}
+  calAccessToken=null;showToast('Signed out');setTimeout(()=>location.reload(),1000);
+}
+
 window.showToast=function(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 async function init(){
   updateClock();setInterval(updateClock,1000);
@@ -1333,8 +1524,16 @@ async function init(){
       await loadFromFirebase();
       document.getElementById('tab-morning').classList.toggle('active',state.routineSession==='morning');
       document.getElementById('tab-evening').classList.toggle('active',state.routineSession==='evening');
-      refreshWeather();renderDates();renderRoutine();renderCatholic();renderLPTasks();refreshMarkets();
-      initCalendar();
+      // Apply toggles and render cheap UI first (instant)
+  applyToggles();
+  renderDates();
+  renderRoutine();
+  renderWebsites();
+  renderLPTasks();
+  // Then fetch remote data (staggered to avoid simultaneous requests)
+  refreshWeather();
+  setTimeout(refreshMarkets, 300);
+  setTimeout(initCalendar, 600);
       // Auto-refresh when app comes back into focus
   document.addEventListener('visibilitychange', ()=>{
     if(!document.hidden){
@@ -1342,7 +1541,7 @@ async function init(){
       refreshMarkets();
       renderDates();
       renderRoutine();
-      renderCatholic();
+      renderWebsites();
       renderLPTasks();
       if(calAccessToken) renderCalendar();
     }
